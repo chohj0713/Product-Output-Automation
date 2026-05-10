@@ -4,8 +4,7 @@
 
 | Field | Value |
 | --- | --- |
-| Figma file | `[26-XX] 픽드랍 예약` |
-| Figma page | `픽드랍 기능명세` |
+| Feature spec | `outputs/pickdrop/pickdrop-reservation-feature-spec.md` |
 | Figma URL | https://www.figma.com/design/WCxDoUASusnVpKd3GWc93R/-26-XX--%ED%94%BD%EB%93%9C%EB%9E%8D-%EC%98%88%EC%95%BD?node-id=0-1 |
 | Validation date | 2026-05-10 |
 
@@ -14,24 +13,25 @@
 | Check | Result | Notes |
 | --- | --- | --- |
 | Feature spec exists | Pass | `pickdrop-reservation-feature-spec.md` |
-| Body rows exist | Pass | `기능 요구사항` sections used |
+| Business/UI split exists | Pass | Each major section separates `Business Logic` and `UI Logic` |
+| Integration notes exist | Pass | UI actions and business rules are connected in `Integration Notes` |
 | Source-detail blocks hidden | Pass | No row-level source-detail blocks |
 | Implementation source details hidden | Pass | No implementation source-detail section |
 | Logic coverage hidden | Pass | Internal coverage remains in `coverage-matrix.md` only |
+| Internal logic IDs hidden | Pass | Final spec does not expose internal logic IDs |
 | Korean text sanity | Pass | No mojibake pattern found |
 
-## Figma Checks
+## Harness Checks
 
 | Check | Result | Notes |
 | --- | --- | --- |
-| Page exists | Pass | Page id `0:1` |
-| Page title | Pass | `픽드랍 기능명세` |
-| Top-level frames | Pass | 11 frames: overview + 10 spec sections |
-| Text-first structure | Pass | Sections contain title, context, and behavior rows |
-| Source-detail text hidden | Pass | No code source details, file paths, line numbers, or coverage IDs exposed |
+| Logic inventory structure | Pass | `Business Logic Items`, `UI Logic Items`, `Integration Mapping Items`, `Unknown Items` |
+| Coverage matrix structure | Pass | Includes `Logic Type`, `Category`, `Status`, `Spec Area`, `Spec Row` |
+| Open questions structure | Pass | Questions include `Logic Type` and owner |
+| Markdown validation | Pass | `validate-markdown.mjs` returned `passed: true` |
 
 ## Remaining Open Items
 
-- Decide whether insufficient 픽드랍 이용권 blocks save or allows over-limit save.
-- Decide hoteling 왕복 차감 기준.
-- Decide whether pickup-only and dropoff-only should both display as `편도` or be labeled separately.
+- 픽드랍 이용권 부족 상태에서 저장을 차단할지, 초과 예약으로 허용할지 결정이 필요하다.
+- 호텔링에서 체크인 픽업과 체크아웃 하원을 모두 선택한 경우 왕복 1회 차감인지 편도 2회 차감인지 결정이 필요하다.
+- 픽업만 선택한 편도와 하원만 선택한 편도를 화면에서 같은 편도로 표시할지, 별도 라벨로 표시할지 결정이 필요하다.

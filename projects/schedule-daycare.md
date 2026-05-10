@@ -52,11 +52,20 @@ outputs\<feature>\
 - Repair and compatibility logic usually includes `repair`, `sync`, `migration`, or existing detail update flows.
 - If a feature spans multiple flows, split the spec into case groups. Example: 픽드랍 has general reservation and hoteling-related cases.
 
+## Business/UI Logic Split
+
+- Treat pricing, ticket usage, reservation availability, save/update payload, and exception policy as `Business Logic`.
+- Treat screen entry, modal state, option selection, calendar state, visible copy, disabled buttons, empty states, and errors as `UI Logic`.
+- Treat interactions such as "option selected -> fee recalculated" or "date changed -> ticket availability refreshed" as `Integration Mapping`.
+- Do not use UI-only behavior as proof of product policy unless the policy is also represented in service, pricing, ticket, or persistence logic.
+- Do not omit background policy just because it has no visible screen element.
+
 ## Codex Instructions
 
 - Read the prototype code before creating feature specs.
 - Use the user's requested feature as the boundary.
 - Start detailed specs with `logic-inventory.md` and `coverage-matrix.md`.
+- Plan sections by `Business Logic`, `UI Logic`, and `Integration Mapping` before writing the final spec.
 - Include only behavior supported by code or explicitly requested by the user.
 - Put uncertain or missing behavior in `open-questions.md` and the spec `Open Questions`.
 - Save intermediate Markdown outputs under the feature output folder.

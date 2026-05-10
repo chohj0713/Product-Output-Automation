@@ -31,6 +31,7 @@ console.log(JSON.stringify({
   specPath,
   candidateFileCount: candidateFiles.length,
   inventoryItemCount: inventoryItems.length,
+  logicTypes: countBy(inventoryItems, "logicType"),
   coverage: countBy(coverageRows, "status")
 }, null, 2));
 
@@ -106,18 +107,31 @@ function categorize(line, file) {
   return "Unknown";
 }
 
+function toLogicType(category, line = "", file = "") {
+  const text = `${line} ${file}`.toLowerCase().replaceAll("\\", "/");
+  if (["Pricing", "Ticket Usage", "Persistence", "Repair/Migration"].includes(category)) return "Business";
+  if (category === "Validation") return text.includes("disabled") || text.includes("classlist") ? "UI" : "Business";
+  if (category === "UI" || category === "State") return "UI";
+  if (text.includes("submit") || text.includes("save") || text.includes("update")) return "Integration";
+  if (text.includes("calculate") || text.includes("fee") || text.includes("ticket")) return "Business";
+  if (text.includes("addeventlistener") || text.includes("data-") || text.includes(".html")) return "UI";
+  if (category === "Edge Case") return "Integration";
+  return "Unknown";
+}
+
 function rankCandidateFiles(matches) {
   const grouped = new Map();
   for (const match of matches) {
-    const item = grouped.get(match.file) || { file: match.file, count: 0, categories: new Set(), lines: [] };
+    const item = grouped.get(match.file) || { file: match.file, count: 0, categories: new Set(), logicTypes: new Set(), lines: [] };
     item.count += 1;
     item.categories.add(match.category);
+    item.logicTypes.add(toLogicType(match.category, match.text, match.file));
     item.lines.push(match);
     grouped.set(match.file, item);
   }
   return [...grouped.values()]
     .sort((a, b) => b.count - a.count)
-    .map((item) => ({ ...item, categories: [...item.categories] }));
+    .map((item) => ({ ...item, categories: [...item.categories], logicTypes: [...item.logicTypes] }));
 }
 
 function buildInventory(matches) {
@@ -128,6 +142,7 @@ function buildInventory(matches) {
     .map((match, index) => ({
       id: `LI-${String(index + 1).padStart(3, "0")}`,
       source: `${path.relative(process.cwd(), match.file)}:${match.line}`,
+      logicType: toLogicType(match.category, match.text, match.file),
       category: match.category,
       summary: summarizeLine(match.text),
       evidence: match.text
@@ -172,7 +187,7 @@ function buildCoverage(items, spec) {
     const basename = path.basename(file);
     const symbol = extractSymbol(item.evidence);
     let status = "Not Covered";
-    let notes = "명세에서 직접 근거를 찾지 못함.";
+    let notes = "명세에서 직접 매칭되는 항목을 찾지 못함.";
     if (symbol && specText.includes(symbol)) {
       status = "Covered";
       notes = `명세에 symbol \`${symbol}\` 언급 있음.`;
@@ -187,7 +202,7 @@ function buildCoverage(items, spec) {
       status = status === "Covered" ? status : "Open Question";
       notes = "자동 분류가 어려운 항목. 정책/UX 확인 필요.";
     }
-    return { ...item, status, figmaSection: "", specRow: "", notes };
+    return { ...item, status, specArea: "", specRow: "", notes };
   });
 }
 
@@ -224,9 +239,9 @@ ${keys.map((key) => `- \`${key}\``).join("\n")}
 
 ## Files
 
-| File | Matches | Categories |
-| --- | ---: | --- |
-${files.map((item) => `| \`${item.file}\` | ${item.count} | ${item.categories.join(", ")} |`).join("\n")}
+| File | Matches | Logic Types | Categories |
+| --- | ---: | --- | --- |
+${files.map((item) => `| \`${item.file}\` | ${item.count} | ${item.logicTypes.join(", ")} | ${item.categories.join(", ")} |`).join("\n")}
 `;
 }
 
@@ -244,15 +259,33 @@ function renderLogicInventory(featureName, root, keys, files, items) {
 
 ## Candidate File Roles
 
-| File | Role Guess | Evidence Count |
-| --- | --- | ---: |
-${files.map((item) => `| \`${item.file}\` | ${roleGuess(item.categories)} | ${item.count} |`).join("\n")}
+| File | Logic Type Guess | Role Guess | Evidence Count |
+| --- | --- | --- | ---: |
+${files.map((item) => `| \`${item.file}\` | ${logicTypeGuess(item.logicTypes)} | ${roleGuess(item.categories)} | ${item.count} |`).join("\n")}
 
-## Logic Items
+## Business Logic Items
 
-| ID | Category | Source | Summary | Evidence |
-| --- | --- | --- | --- | --- |
-${items.map((item) => `| ${item.id} | ${item.category} | \`${item.source}\` | ${escapePipe(item.summary)} | \`${escapePipe(item.evidence)}\` |`).join("\n")}
+| ID | Logic Type | Category | Source | Summary | Evidence |
+| --- | --- | --- | --- | --- | --- |
+${items.filter((item) => item.logicType === "Business").map(renderInventoryRow).join("\n")}
+
+## UI Logic Items
+
+| ID | Logic Type | Category | Source | Summary | Evidence |
+| --- | --- | --- | --- | --- | --- |
+${items.filter((item) => item.logicType === "UI").map(renderInventoryRow).join("\n")}
+
+## Integration Mapping Items
+
+| ID | Logic Type | Category | Source | Summary | Evidence |
+| --- | --- | --- | --- | --- | --- |
+${items.filter((item) => item.logicType === "Integration").map(renderInventoryRow).join("\n")}
+
+## Unknown Items
+
+| ID | Logic Type | Category | Source | Summary | Evidence |
+| --- | --- | --- | --- | --- | --- |
+${items.filter((item) => item.logicType === "Unknown").map(renderInventoryRow).join("\n")}
 `;
 }
 
@@ -268,36 +301,72 @@ function renderCoverageMatrix(featureName, spec, rows) {
 
 ## Matrix
 
-| Logic ID | Category | Source | Summary | Status | Figma Section | Spec Row | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-${rows.map((row) => `| ${row.id} | ${row.category} | \`${row.source}\` | ${escapePipe(row.summary)} | ${row.status} | ${row.figmaSection} | ${row.specRow} | ${escapePipe(row.notes)} |`).join("\n")}
+| Logic ID | Logic Type | Category | Source | Summary | Status | Spec Area | Spec Row | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${rows.map((row) => `| ${row.id} | ${row.logicType} | ${row.category} | \`${row.source}\` | ${escapePipe(row.summary)} | ${row.status} | ${row.specArea} | ${row.specRow} | ${escapePipe(row.notes)} |`).join("\n")}
 `;
 }
 
 function renderOpenQuestions(featureName, rows) {
   const questions = rows.filter((row) => row.status === "Open Question" || row.status === "Not Covered");
+  const policyQuestions = questions.filter((row) => row.logicType === "Business" || row.logicType === "Integration");
+  const uxQuestions = questions.filter((row) => row.logicType === "UI");
+  const operationalQuestions = questions.filter((row) => row.logicType === "Unknown");
   return `# Open Questions: ${featureName}
 
-## Questions To Resolve
+## Product Policy Questions
 
-| Logic ID | Source | Question | Owner | Status |
-| --- | --- | --- | --- | --- |
-${questions.map((row) => `| ${row.id} | \`${row.source}\` | ${questionFor(row)} | PM/Product | Open |`).join("\n")}
+| Logic ID | Logic Type | Source | Question | Owner | Status |
+| --- | --- | --- | --- | --- | --- |
+${policyQuestions.map(renderQuestionRow).join("\n")}
+
+## UX Copy Questions
+
+| Logic ID | Logic Type | Source | Question | Owner | Status |
+| --- | --- | --- | --- | --- | --- |
+${uxQuestions.map(renderQuestionRow).join("\n")}
+
+## Operational Questions
+
+| Logic ID | Logic Type | Source | Question | Owner | Status |
+| --- | --- | --- | --- | --- | --- |
+${operationalQuestions.map(renderQuestionRow).join("\n")}
 `;
 }
 
+function renderQuestionRow(row) {
+  return `| ${row.id} | ${row.logicType} | \`${row.source}\` | ${questionFor(row)} | ${ownerFor(row)} | Open |`;
+}
+
+function renderInventoryRow(item) {
+  return `| ${item.id} | ${item.logicType} | ${item.category} | \`${item.source}\` | ${escapePipe(item.summary)} | \`${escapePipe(item.evidence)}\` |`;
+}
+
+function logicTypeGuess(types) {
+  if (types.includes("Business")) return "Business";
+  if (types.includes("Integration")) return "Integration";
+  if (types.includes("UI")) return "UI";
+  return "Unknown";
+}
+
 function roleGuess(categories) {
-  if (categories.includes("UI")) return "UI entrypoint or screen markup";
   if (categories.includes("Pricing")) return "Pricing/calculation policy";
   if (categories.includes("Ticket Usage")) return "Ticket usage/allocation policy";
   if (categories.includes("Persistence")) return "Save/update flow";
   if (categories.includes("Repair/Migration")) return "Repair or synchronization flow";
+  if (categories.includes("UI")) return "UI entrypoint or screen markup";
   return "Related implementation detail";
 }
 
 function questionFor(row) {
   if (row.status === "Not Covered") return `이 로직을 기능명세에 반영해야 하는가: ${escapePipe(row.summary)}`;
-  return `코드 근거만으로 정책을 확정할 수 있는가: ${escapePipe(row.summary)}`;
+  return `코드만으로 정책 또는 UX를 확정할 수 있는가: ${escapePipe(row.summary)}`;
+}
+
+function ownerFor(row) {
+  if (row.logicType === "UI") return "Design/PM";
+  if (row.logicType === "Business") return "PM/Product";
+  return "PM/Product";
 }
 
 function escapePipe(value) {

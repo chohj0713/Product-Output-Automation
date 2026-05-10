@@ -9,9 +9,13 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "source", "category", "summary", "status"],
+        "required": ["id", "logicType", "source", "category", "summary", "status"],
         "properties": {
           "id": { "type": "string" },
+          "logicType": {
+            "type": "string",
+            "enum": ["Business", "UI", "Integration", "Unknown"]
+          },
           "source": { "type": "string" },
           "category": {
             "type": "string",
@@ -22,7 +26,7 @@
             "type": "string",
             "enum": ["Covered", "Partial", "Not Covered", "Open Question"]
           },
-          "figmaSection": { "type": "string" },
+          "specArea": { "type": "string" },
           "specRow": { "type": "string" },
           "notes": { "type": "string" }
         }
