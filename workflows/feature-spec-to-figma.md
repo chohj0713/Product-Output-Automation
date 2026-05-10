@@ -1,16 +1,10 @@
-# Workflow: Logic Coverage Feature Spec To Figma
+# Workflow: Feature Spec From Code
 
 ## Goal
 
-Create a detailed feature specification from a code-based prototype. The Figma output still follows the reference layout, but the source of truth is the code logic coverage workflow:
+Create a detailed feature specification text from a code-based prototype. The main output is Markdown text. Figma is optional and should be used only when the user explicitly asks for visual placement.
 
-1. collect candidate code,
-2. create `logic-inventory.md`,
-3. create `coverage-matrix.md`,
-4. write the Markdown/Figma feature spec,
-5. validate missing logic and visual readability.
-
-This workflow is designed to prevent omitted branches, constraints, save effects, pricing rules, ticket usage rules, and edge cases.
+The workflow uses code analysis to prevent missing branches and constraints, but the final feature spec must not expose code evidence, file paths, line numbers, source symbols, or `LI-*` IDs.
 
 ## Required Outputs
 
@@ -30,11 +24,11 @@ outputs/<feature>/
 
 ## Step 1: Code Candidate Collection
 
-Search the prototype before writing any spec.
+Search the prototype before writing any spec. This is internal analysis, not final spec text.
 
 - Search feature keywords, Korean UI copy, data attributes, and related English terms.
-- Identify candidate files in `src/pages`, `src/services`, and any feature-specific modules.
-- Categorize code evidence into:
+- Identify candidate files in the relevant page, component, service, storage, and policy modules.
+- Categorize discovered logic into:
   - `UI`
   - `State`
   - `Validation`
@@ -59,16 +53,9 @@ node .\harness\feature-spec\scripts\analyze-feature.mjs `
 
 Create `outputs/<feature>/logic-inventory.md` using `templates/logic-inventory.md`.
 
-Every inventory item must include:
+The inventory is an internal working artifact. It may include source locations and code facts because it exists to prevent omission. Do not copy those source details into the final feature spec.
 
-- stable ID, for example `LI-001`,
-- category,
-- source file and line,
-- short implementation summary,
-- evidence,
-- product meaning.
-
-Do not collapse important branches into one vague item. Separate these when they affect behavior:
+Separate items when they affect behavior:
 
 - UI entry/exit paths,
 - selected state and initialization,
@@ -82,57 +69,53 @@ Do not collapse important branches into one vague item. Separate these when they
 
 Create `outputs/<feature>/coverage-matrix.md` using `templates/coverage-matrix.md`.
 
-Every `Logic ID` from the inventory must have exactly one status:
+Every logic inventory item must have exactly one status:
 
 - `Covered`: reflected in the spec as confirmed behavior.
 - `Partial`: partly reflected; missing conditions are named.
 - `Not Covered`: not reflected; exclusion or follow-up required.
 - `Open Question`: cannot be confirmed from code alone.
 
-The matrix must point to the Figma section and spec row when covered.
+The matrix is internal. The final feature spec should summarize behavior, not show matrix IDs.
 
-## Step 4: Feature Spec Draft
+## Step 4: Feature Spec Text
 
-Create the feature spec using `templates/feature-spec.md`.
+Create the final feature spec using `templates/feature-spec.md`.
 
-The Figma layout remains:
+Each section should include:
 
-- section frame: `2160px` wide,
-- left capture panel: `1280px` wide,
-- right spec panel: `840px` wide,
-- gap: `40px`,
-- header rows: `상황`, `화면명 + 경로`, `Case`,
-- body rows: `P`, `1`, `2`, `3` with matching callouts.
-
-Each section must include:
-
-- capture ID,
-- callout list,
-- spec header,
-- spec body rows,
-- `Logic Coverage` table,
-- implementation evidence,
+- user situation,
+- screen or workflow name,
+- user-facing entry path,
+- case name,
+- detailed behavior rows,
+- branch/condition,
+- constraint,
+- persistence impact,
 - assumptions,
 - open questions.
 
-Confirmed behavior, inferred behavior, and unknown behavior must be separated.
+Do not include:
+
+- code evidence,
+- file paths,
+- line numbers,
+- source symbols,
+- implementation evidence sections,
+- `Logic Coverage` tables,
+- `LI-*` IDs.
 
 ## Step 5: Capture Handling
 
-Captures are first-class output assets.
+Captures are optional for text-first specs. Use them only to clarify screen context.
 
 - Store captures under `outputs/<feature>/captures/`.
-- Maintain `outputs/<feature>/capture-index.md`.
-- Every Figma section must reference a capture ID.
-- If no capture exists, create a labeled capture slot/mock and mark the capture `Pending`.
-- After placing a capture in Figma, mark it `Placed` or `Replaced`.
-- Do not mix captures from different features in one folder.
+- Maintain `outputs/<feature>/capture-index.md` when captures are used.
+- Do not block text spec completion on missing captures.
 
 ## Step 6: Validation
 
-Run both Markdown and Figma validation before final delivery.
-
-Markdown validation:
+Run Markdown validation before final delivery.
 
 ```powershell
 node .\harness\feature-spec\scripts\validate-markdown.mjs `
@@ -145,23 +128,13 @@ Required checks:
 - feature spec exists,
 - logic inventory exists,
 - coverage matrix exists,
-- capture index exists,
-- coverage statuses are present,
-- Korean text is not mojibake,
-- metadata references Figma URL, capture index, logic inventory, and coverage matrix.
-
-Figma validation:
-
-- every section has one left capture/mock and one right spec table,
-- every numbered spec row has a matching left callout,
-- every left callout has a matching spec row,
-- text wraps inside the table,
-- Korean text is not garbled, clipped, overlapped, or hidden,
-- real captures are not distorted or cropped in a way that hides the target UI.
+- capture index exists when captures are used,
+- coverage statuses are present in the internal matrix,
+- final feature spec has no evidence blocks or logic coverage sections,
+- Korean text is not mojibake.
 
 ## Encoding Standard
 
 - Save Markdown as UTF-8.
 - Treat PowerShell mojibake as terminal display unless the file itself contains mojibake.
-- If generated Korean text contains `�`, `?쎈`, `?곹`, `?붾`, or similar broken sequences, fix the file before delivery.
-- Prefer `Get-Content -Encoding UTF8` when inspecting Markdown in PowerShell.
+- If generated Korean text contains broken sequences, fix the file before delivery.

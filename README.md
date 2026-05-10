@@ -24,9 +24,9 @@ Use only when the user wants a quick visual spec.
 - Screen/case sections.
 - Capture and callouts.
 - Basic UI behavior.
-- Minimal code evidence.
+- Minimal internal coverage tracking.
 
-### Default Spec: Logic Coverage
+### Default Spec: Coverage-Guided Text
 
 Use this by default for detailed feature specs.
 
@@ -34,32 +34,28 @@ Use this by default for detailed feature specs.
 - `logic-inventory.md`.
 - `coverage-matrix.md`.
 - `open-questions.md`.
-- Figma/Markdown feature spec.
+- Markdown feature spec text.
 - Capture index and readability validation.
 
 ### Extended Spec: QA-Ready
 
 Use when the output will feed QA or Notion test cases.
 
-- Everything in Logic Coverage.
+- Everything in coverage-guided text spec.
 - Scenario/state combination table.
 - Acceptance criteria.
 - QA test case table.
 
-## Figma Feature Spec Standard
+## Feature Spec Standard
 
-Figma feature specs in this workspace follow the reference structure:
+Feature specs in this workspace are text-first by default:
 
-- one Figma section per screen/case,
-- section frame: `2160px` wide,
-- left side: `1280px` screen or modal capture,
-- left side: `P`, `1`, `2`, `3` callouts over relevant UI areas,
-- right side: `840px` spec panel,
-- header rows: `상황`, `화면명 + 경로`, `Case`,
-- body rows: stacked `설명` rows with a `Number` badge and freeform description block,
-- each section includes `Logic Coverage`,
-- captures are tracked in `outputs/<feature>/capture-index.md`,
-- feature-specific screenshots are stored in `outputs/<feature>/captures/`.
+- one section per screen/case/workflow,
+- header fields: `상황`, `화면명`, `경로`, `Case`,
+- body rows: `P`, `1`, `2`, `3` style rows when useful,
+- rows include condition, constraint, persistence impact, and behavior text,
+- final feature spec text does not include code evidence, file paths, line numbers, source symbols, or logic coverage IDs,
+- captures are optional and tracked in `outputs/<feature>/capture-index.md` only when used.
 
 Use `templates/feature-spec.md` as the source template.
 Use `templates/logic-inventory.md` and `templates/coverage-matrix.md` before writing a detailed spec.

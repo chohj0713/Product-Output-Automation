@@ -17,9 +17,11 @@ checkFile(captureIndexPath, "Capture index");
 
 if (existsSync(specPath)) {
   const spec = readFileSync(specPath, "utf8");
-  requireText(spec, "Figma URL", "Feature spec metadata has Figma URL");
-  requireText(spec, "Capture", "Feature spec references captures");
-  requireText(spec, "Implementation Evidence", "Feature spec has implementation evidence");
+  requireText(spec, "Output Metadata", "Feature spec has output metadata");
+  requireText(spec, "Spec Body Rows", "Feature spec has body rows");
+  rejectText(spec, "Evidence:", "Feature spec has no row-level evidence blocks");
+  rejectText(spec, "Implementation Evidence", "Feature spec has no implementation evidence section");
+  rejectText(spec, "Logic Coverage", "Feature spec has no logic coverage section");
   rejectMojibake(spec, "Feature spec Korean text sanity");
 }
 
@@ -69,6 +71,10 @@ function requireText(text, needle, check) {
 
 function requireAny(text, needles, check) {
   results.push({ check, result: needles.some((needle) => text.includes(needle)) ? "Pass" : "Fail", target: needles.join(", ") });
+}
+
+function rejectText(text, needle, check) {
+  results.push({ check, result: text.includes(needle) ? "Fail" : "Pass", target: needle });
 }
 
 function rejectMojibake(text, check) {

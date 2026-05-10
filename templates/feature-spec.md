@@ -1,53 +1,37 @@
-# Figma Feature Spec: <Feature Name>
+# Feature Spec: <Feature Name>
 
-Use this template for detailed Figma feature specifications based on code logic coverage.
+Use this template for detailed text-first feature specifications based on internal code logic coverage.
 
 ## Output Metadata
 
 | Field | Value |
 | --- | --- |
-| Figma file name | `<Figma file name>` |
-| Figma URL | `<Figma URL or TBD>` |
-| Figma page | `<Page name>` |
 | Project | `<Project name>` |
 | Feature output folder | `outputs/<feature>` |
-| Prototype path | `<Prototype path>` |
-| Capture index | `outputs/<feature>/capture-index.md` |
-| Logic inventory | `outputs/<feature>/logic-inventory.md` |
-| Coverage matrix | `outputs/<feature>/coverage-matrix.md` |
+| Capture index | `outputs/<feature>/capture-index.md or N/A` |
 | Markdown encoding | UTF-8 |
 | Last updated | `<YYYY-MM-DD>` |
-| Readability validation | `<Pending / Structure passed / Visual passed>` |
+| Markdown validation | `<Pending / Passed>` |
 
-## Figma Layout Standard
+## Text Spec Standard
 
-- One Figma section/frame per screen or case.
-- Section frame width: `2160px`.
-- Left capture panel: `1280px` wide.
-- Right spec panel: `840px` wide.
-- Gap between capture and spec panel: `40px`.
-- Left panel contains the screen/modal capture and callout overlays.
-- Right panel follows the reference spec structure:
-  - Header frame: `120px` high.
-  - Header row 1: `상황`, full width `840px`, height `40px`.
-  - Header row 2: `화면명` width `360px` + `경로` width `480px`, height `40px`.
-  - Header row 3: `Case`, full width `840px`, height `40px`.
-  - Body rows: stacked `설명` rows.
-  - Each body row has a `Number` badge and a freeform description block.
+- One section per screen, workflow, or case.
+- Each section starts with `상황`, `화면명`, `경로`, and `Case`.
+- Body rows use `P`, `1`, `2`, `3` numbering when row references are useful.
+- Rows focus on behavior, branches, constraints, persistence impact, assumptions, and open questions.
+- The final text does not include code evidence or internal coverage IDs.
 
 ## Capture Assets
 
-| Capture ID | File | Required | Figma Section | Status | Notes |
+| Capture ID | File | Required | Spec Section | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `<capture-id>` | `captures/<file>.png` | Yes | `<Section title>` | `<Pending / Provided / Placed>` | `<state, data, viewport, or replacement notes>` |
 
-## Figma Section
+## Spec Section
 
 - Section title: `<Number>. <Screen or case name>`
 - Capture ID: `<capture-id>`
-- Left side: `<target screen/modal capture>`
-- Left side annotations: `P`, `1`, `2`, `3`
-- Right side: reference spec panel
+- Row numbers: `P`, `1`, `2`, `3`
 
 ## Spec Header
 
@@ -55,7 +39,7 @@ Use this template for detailed Figma feature specifications based on code logic 
 | --- | --- |
 | 상황 | `<Feature area and current user situation>` |
 | 화면명 | `<Screen or modal name>` |
-| 경로 | `<Navigation path, route, or implementation path>` |
+| 경로 | `<User-facing navigation path or entry point>` |
 | Case | `<Specific case or scenario name>` |
 
 ## Spec Body Rows
@@ -72,8 +56,6 @@ Use `P` for policy/global notes that affect the whole screen. Use numbered rows 
 - Lines:
   - `<Global rule, unchanged policy, compatibility note, or implemented constraint>`
   - `<Additional policy line if needed>`
-- Evidence:
-  - `<file>:<line> <symbol or code fact>`
 
 ### 1
 
@@ -86,21 +68,6 @@ Use `P` for policy/global notes that affect the whole screen. Use numbered rows 
   - `<Changed behavior or implementation status>`
   - `<Default, validation, disabled behavior, success/failure behavior>`
   - `<Error or edge case copy if known>`
-- Evidence:
-  - `<file>:<line> <symbol or code fact>`
-
-## Logic Coverage
-
-Every section must map spec rows back to `logic-inventory.md`.
-
-| Spec Row | Logic IDs | Coverage Status | Notes |
-| --- | --- | --- | --- |
-| P | `LI-001, LI-002` | Covered | `<coverage note>` |
-| 1 | `LI-003` | Partial | `<missing branch or follow-up>` |
-
-## Implementation Evidence
-
-- `<Route/component/state/data source/copy discovered in the prototype>`
 
 ## Assumptions
 
@@ -119,3 +86,4 @@ Every section must map spec rows back to `logic-inventory.md`.
 - For actions, separate activation condition, success behavior, failure behavior, and exact error copy when known.
 - Include implementation status inline only when it changes interpretation.
 - Put inferred or uncertain behavior in `Assumptions` or `Open Questions`; do not present it as confirmed.
+- Do not include code evidence, file paths, line numbers, source symbols, or logic coverage IDs in the final feature spec text.

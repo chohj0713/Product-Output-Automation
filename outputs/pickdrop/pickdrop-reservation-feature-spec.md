@@ -1,4 +1,4 @@
-# Figma Feature Spec: 픽드랍 예약 v4
+# Feature Spec: 픽드랍 예약
 
 ## Output Metadata
 
@@ -9,17 +9,14 @@
 | Figma page | 픽드랍 상세 기능명세 v4 |
 | Project | Schedule Daycare |
 | Feature output folder | `F:\OneDrive\문서\Product Output Automation\outputs\pickdrop` |
-| Prototype path | `F:\OneDrive\문서\Schedule_Daycare_20260320` |
 | Capture index | `outputs/pickdrop/capture-index.md` |
-| Logic inventory | `outputs/pickdrop/logic-inventory.md` |
-| Coverage matrix | `outputs/pickdrop/coverage-matrix.md` |
 | Markdown encoding | UTF-8 |
 | Last updated | 2026-05-09 |
 | Readability validation | Structure passed |
 
 ## Capture Assets
 
-| Capture ID | File | Required | Figma Section | Status | Notes |
+| Capture ID | File | Required | Spec Section | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
 | pickdrop-entry | `captures/screen_modal_pickdrop_list.png` | Yes | 1. 픽드랍 목록 및 예약 진입 | Placed | 목록/진입 캡처 |
 | pickdrop-option-date | `captures/screen_modal_booking_step_2_pickdrop.png` | Yes | 2. 예약 모달 픽드랍 모드 | Placed | 픽드랍 옵션/날짜 선택 캡처 |
@@ -28,11 +25,11 @@
 
 ---
 
-## Figma Section
+## Spec Section
 
 - Section title: `1. 픽드랍 목록 및 예약 진입`
 - Capture ID: `pickdrop-entry`
-- Left side annotations: `P`, `1`, `2`, `3`
+- Row numbers: `P`, `1`, `2`, `3`
 
 ## Spec Header
 
@@ -40,7 +37,7 @@
 | --- | --- |
 | 상황 | 픽드랍 예약 현황을 확인하거나 예약 등록 흐름으로 진입 |
 | 화면명 | 픽드랍 목록 / 예약 등록 모달 진입 |
-| 경로 | `public/index.html`, `src/pages/reservation.js` |
+| 경로 | 픽드랍 목록 버튼 / 예약 등록 모달 |
 | Case | 픽드랍 목록 확인, 날짜/필터 조작, 예약 등록 모달 진입 |
 
 ## Spec Body Rows
@@ -56,10 +53,6 @@
   - 픽드랍 목록은 날짜 선택, 이전/다음 날짜 이동, 픽업/하원 필터를 제공한다.
   - 목록 영역은 `aria-live`로 변경 결과를 알릴 수 있는 구조다.
   - 예약 등록 모달의 픽드랍 진입과 목록 조회는 별도 케이스로 관리한다.
-- Evidence:
-  - `public/index.html:167` `data-pickdrop-open`
-  - `public/index.html:202` `data-pickdrop-date-picker`
-  - `public/index.html:214` `data-pickdrop-filter`
 
 ### 1
 
@@ -71,9 +64,6 @@
 - Lines:
   - 픽드랍 목록 모달을 열어 해당 날짜의 픽드랍 대상을 확인한다.
   - 닫기 버튼과 오버레이로 목록 모달을 닫을 수 있어야 한다.
-- Evidence:
-  - `public/index.html:194` `data-pickdrop-modal`
-  - `public/index.html:208` `data-pickdrop-close`
 
 ### 2
 
@@ -85,9 +75,6 @@
 - Lines:
   - 픽업 필터는 `pickup`, 하원 필터는 `dropoff` 값을 사용한다.
   - 필터 선택 결과에 따라 목록 표시 대상을 좁힌다.
-- Evidence:
-  - `public/index.html:214` `value="pickup"`
-  - `public/index.html:218` `value="dropoff"`
 
 ### 3
 
@@ -99,27 +86,15 @@
 - Lines:
   - 기본 예약 상태에서 클릭하면 픽드랍 모드로 전환한다.
   - 이미 픽드랍 모드인 경우 픽드랍 포함 저장 흐름으로 진입한다.
-- Evidence:
-  - `src/pages/reservation.js:2095` `pickdropToggle?.addEventListener`
-  - `src/pages/reservation.js:2098` `submitReservation({ includePickdrop: true })`
-  - `src/pages/reservation.js:2106` `setPickdropMode(true)`
 
-## Logic Coverage
-
-| Spec Row | Logic IDs | Coverage Status | Notes |
-| --- | --- | --- | --- |
-| P | LI-030 | Covered | 픽드랍 진입 이벤트 반영 |
-| 1 | LI-001~LI-014 from public index candidates | Partial | 목록 세부 렌더링 로직은 별도 목록 기능명세로 확장 가능 |
-| 2 | LI-012, LI-013 | Covered | pickup/dropoff 필터 UI 반영 |
-| 3 | LI-013, LI-030, LI-031 | Covered | 모드 전환과 포함 저장 분기 반영 |
 
 ---
 
-## Figma Section
+## Spec Section
 
 - Section title: `2. 예약 모달 픽드랍 모드`
 - Capture ID: `pickdrop-option-date`
-- Left side annotations: `P`, `1`, `2`, `3`, `4`
+- Row numbers: `P`, `1`, `2`, `3`, `4`
 
 ## Spec Header
 
@@ -127,7 +102,7 @@
 | --- | --- |
 | 상황 | 서비스 예약 중 픽드랍 옵션과 날짜를 추가 선택 |
 | 화면명 | 예약 등록 모달 |
-| 경로 | `src/pages/reservation.js` |
+| 경로 | 예약 등록 모달 |
 | Case | `is-pickdrop` 모드 진입, 옵션/날짜/이용권 표시 전환 |
 
 ## Spec Body Rows
@@ -143,10 +118,6 @@
   - `is-pickdrop` 클래스와 진행 표시 상태를 토글한다.
   - 서비스 예약 세그먼트와 픽드랍 세그먼트를 모드에 맞게 접거나 펼친다.
   - 최초 진입 시 서비스 선택 날짜를 픽드랍 날짜 기본값으로 복사한다.
-- Evidence:
-  - `src/pages/reservation.js:532` `setPickdropMode`
-  - `src/pages/reservation.js:623` pickdrop ticket/fee segment open
-  - `src/pages/reservation.js:639` `pickdropDates` initialization
 
 ### 1
 
@@ -159,10 +130,6 @@
   - 최초 진입 시 서비스 날짜를 기본 픽드랍 날짜로 복사한다.
   - 픽드랍 가능 횟수가 제한되어 있으면 초기 날짜 수를 제한한다.
   - 사용자가 직접 날짜를 바꾸면 자동 초기화 상태를 해제한다.
-- Evidence:
-  - `src/pages/reservation.js:639` `pickdropDatesInitialized`
-  - `src/pages/reservation.js:644` limit slice
-  - `src/pages/reservation.js:2270` date toggle
 
 ### 2
 
@@ -174,10 +141,6 @@
 - Lines:
   - 체크 시 `formState.pickdrops`에 `pickup`을 추가한다.
   - 저장 시 픽드랍 날짜에 `pickup: true`를 반영한다.
-- Evidence:
-  - `src/pages/reservation.js:655` pickdrop set reset
-  - `src/pages/reservation.js:2219` pickdrop input change
-  - `src/pages/reservation.js:1889` date pickup flag
 
 ### 3
 
@@ -189,9 +152,6 @@
 - Lines:
   - 체크 시 `formState.pickdrops`에 `dropoff`를 추가한다.
   - 저장 시 픽드랍 날짜에 `dropoff: true`를 반영한다.
-- Evidence:
-  - `src/pages/reservation.js:2219` pickdrop input change
-  - `src/pages/reservation.js:1890` date dropoff flag
 
 ### 4
 
@@ -203,27 +163,15 @@
 - Lines:
   - 픽드랍 모드에서는 픽드랍 이용권 목록을 별도 세그먼트에 표시한다.
   - 이용 가능한 픽드랍 이용권이 없으면 빈 상태를 표시한다.
-- Evidence:
-  - `src/pages/reservation.js:707` `syncPickdropTickets`
-  - `src/pages/reservation.js:728` `ticket.type === "pickdrop"`
 
-## Logic Coverage
-
-| Spec Row | Logic IDs | Coverage Status | Notes |
-| --- | --- | --- | --- |
-| P | LI-004, LI-026~LI-035 | Covered | 모드 전환과 복귀 분기 반영 |
-| 1 | LI-057, reservation.js:639, reservation.js:2270 | Covered | 가능 횟수 제한과 날짜 초기화 반영 |
-| 2 | reservation.js:2219, LI-050 | Covered | pickup flag 반영 |
-| 3 | reservation.js:2219, LI-051 | Covered | dropoff flag 반영 |
-| 4 | LI-002, LI-044~LI-048 | Covered | 픽드랍 이용권 필터링 반영 |
 
 ---
 
-## Figma Section
+## Spec Section
 
 - Section title: `3. 금액 및 이용권 차감`
 - Capture ID: `pickdrop-payment`
-- Left side annotations: `P`, `1`, `2`, `3`
+- Row numbers: `P`, `1`, `2`, `3`
 
 ## Spec Header
 
@@ -231,7 +179,7 @@
 | --- | --- |
 | 상황 | 픽드랍 선택 결과를 금액과 이용권 차감으로 반영 |
 | 화면명 | 예약 등록 모달 결제/이용권 영역 |
-| 경로 | `src/services/pickdrop-policy.js`, `src/services/ticket-reservation-service.js`, `src/services/reservation-date-fee.js` |
+| 경로 | 예약 등록 모달의 결제/이용권 영역 |
 | Case | 편도/왕복 판정, 금액 계산, 이용권 우선/대체 차감 |
 
 ## Spec Body Rows
@@ -247,9 +195,6 @@
   - 픽업과 하원이 모두 있으면 `roundtrip`으로 판정한다.
   - 둘 중 하나만 있으면 `oneway`로 판정한다.
   - `oneway`, `roundtrip`만 픽드랍 차감 타입으로 사용한다.
-- Evidence:
-  - `src/services/pickdrop-policy.js:3` `PICKDROP_COUNT_TYPES`
-  - `src/services/pickdrop-policy.js:28` `getPickdropCountType`
 
 ### 1
 
@@ -261,10 +206,6 @@
 - Lines:
   - 가격표에서 `oneway`, `roundtrip` 금액을 읽어 픽드랍 금액을 계산한다.
   - 서비스 금액과 픽드랍 금액은 별도 세그먼트로 보여주고 총액에는 합산한다.
-- Evidence:
-  - `src/services/reservation-date-fee.js:99` `oneway`
-  - `src/services/reservation-date-fee.js:100` `roundtrip`
-  - `src/pages/reservation.js:980` pickdrop fee container
 
 ### 2
 
@@ -277,10 +218,6 @@
   - 왕복 예약은 왕복 이용권 1회를 우선 사용한다.
   - 왕복 이용권이 부족하면 편도 이용권 2회 사용을 시도한다.
   - 편도 예약은 편도 이용권 1회를 우선 사용하고, 부족하면 왕복 이용권 1회 사용을 시도한다.
-- Evidence:
-  - `src/services/ticket-reservation-service.js:92` `buildPickdropUsagePlan`
-  - `src/services/ticket-reservation-service.js:146` roundtrip first
-  - `src/services/ticket-reservation-service.js:151` oneway fallback
 
 ### 3
 
@@ -292,26 +229,15 @@
 - Lines:
   - 픽드랍 가능 횟수가 0이면 이용권 영역은 빈 상태로 표시한다.
   - 초과 예약 허용 여부는 현재 코드 분기만으로 제품 정책 확정이 필요하다.
-- Evidence:
-  - `src/pages/reservation.js:726` `forceEmpty`
-  - `src/pages/reservation.js:1673` `allowOverLimit`
 
-## Logic Coverage
-
-| Spec Row | Logic IDs | Coverage Status | Notes |
-| --- | --- | --- | --- |
-| P | LI-001, LI-003, LI-018~LI-020 | Covered | 편도/왕복 판정 반영 |
-| 1 | reservation-date-fee.js:99~100 | Covered | 금액 계산 반영 |
-| 2 | LI-005, LI-012 | Covered | 이용권 차감 계획 반영 |
-| 3 | reservation.js:726, reservation.js:1673 | Partial | 초과 허용 UX 정책은 Open Question |
 
 ---
 
-## Figma Section
+## Spec Section
 
 - Section title: `4. 저장 분기 및 예약 데이터 생성`
 - Capture ID: `pickdrop-payment`
-- Left side annotations: `P`, `1`, `2`, `3`
+- Row numbers: `P`, `1`, `2`, `3`
 
 ## Spec Header
 
@@ -319,7 +245,7 @@
 | --- | --- |
 | 상황 | 서비스 예약만 저장하거나 픽드랍까지 포함해 저장 |
 | 화면명 | 예약 등록 저장 흐름 |
-| 경로 | `src/pages/reservation.js` |
+| 경로 | 예약 등록 저장 흐름 |
 | Case | `submitReservation({ includePickdrop })` 분기와 날짜 entry 생성 |
 
 ## Spec Body Rows
@@ -334,9 +260,6 @@
 - Lines:
   - 서비스 예약만 저장할 때와 픽드랍 포함 저장할 때의 scope가 다르다.
   - 픽드랍 포함 저장 시 서비스 날짜와 픽드랍 날짜를 합쳐 reservation dates를 만든다.
-- Evidence:
-  - `src/pages/reservation.js:1657` `submitReservation`
-  - `src/pages/reservation.js:1660` include pickdrop scope
 
 ### 1
 
@@ -348,10 +271,6 @@
 - Lines:
   - 서비스 날짜에 해당 픽드랍 날짜가 있으면 같은 날짜 entry에 픽업/하원과 이용권 사용량을 합친다.
   - 서비스 날짜에 없는 픽드랍 날짜는 픽드랍 단독 날짜 entry로 추가한다.
-- Evidence:
-  - `src/pages/reservation.js:1887` `pickdropDateSet`
-  - `src/pages/reservation.js:1904` merge ticket usages
-  - `src/pages/reservation.js:1909` pickdrop-only date entry
 
 ### 2
 
@@ -363,10 +282,6 @@
 - Lines:
   - 서비스 이용권 usage와 픽드랍 usage를 날짜별로 병합한다.
   - 병합 후 usage sequence를 다시 부여해 저장한다.
-- Evidence:
-  - `src/pages/reservation.js:1881` `buildDateTicketUsagesMap`
-  - `src/pages/reservation.js:1896` `assignNextUsageSequences`
-  - `src/pages/reservation.js:1904` `mergeTicketUsagesForDate`
 
 ### 3
 
@@ -378,26 +293,15 @@
 - Lines:
   - 저장 완료 후 픽드랍 모드를 해제한다.
   - 모달 닫기/초기화 경로에서도 픽드랍 모드를 해제한다.
-- Evidence:
-  - `src/pages/reservation.js:2085` `setPickdropMode(false)`
-  - `src/pages/reservation.js:2327` `setPickdropMode(false)`
 
-## Logic Coverage
-
-| Spec Row | Logic IDs | Coverage Status | Notes |
-| --- | --- | --- | --- |
-| P | LI-013, LI-014 | Covered | includePickdrop 저장 분기 반영 |
-| 1 | reservation.js:1887, reservation.js:1909 | Covered | 날짜 병합/단독 entry 반영 |
-| 2 | LI-049, reservation.js:1881~1904 | Covered | ticketUsages 병합 반영 |
-| 3 | LI-029, LI-033 | Covered | 저장 후 상태 초기화 반영 |
 
 ---
 
-## Figma Section
+## Spec Section
 
 - Section title: `5. 상세 수정 및 픽드랍 사용량 복구`
 - Capture ID: `pickdrop-payment`
-- Left side annotations: `P`, `1`, `2`, `3`
+- Row numbers: `P`, `1`, `2`, `3`
 
 ## Spec Header
 
@@ -405,7 +309,7 @@
 | --- | --- |
 | 상황 | 기존 예약 상세에서 픽드랍 정보를 표시하거나 수정 |
 | 화면명 | 예약 상세 / 수정 흐름 |
-| 경로 | `src/services/pickdrop-detail-sync.js`, `src/services/pickdrop-usage-repair-service.js` |
+| 경로 | 예약 상세 / 수정 흐름 |
 | Case | 기존 예약의 픽드랍 이용권 사용량을 복구하고 재할당 |
 
 ## Spec Body Rows
@@ -420,9 +324,6 @@
 - Lines:
   - 상세 수정 시 회원 보유 픽드랍 이용권만 후보로 필터링한다.
   - 기존 서비스 이용권 사용량은 유지하고 픽드랍 사용량만 재구성한다.
-- Evidence:
-  - `src/services/pickdrop-detail-sync.js:66` `type === "pickdrop"`
-  - `src/services/pickdrop-usage-repair-service.js:101` `mergeUsagesKeepService`
 
 ### 1
 
@@ -434,9 +335,6 @@
 - Lines:
   - 기존 예약 날짜의 `ticketUsages`에서 픽드랍 이용권 사용량을 집계한다.
   - 이용권 타입은 `resolvePickdropTicketCountType` 기준으로 해석한다.
-- Evidence:
-  - `src/services/pickdrop-usage-repair-service.js:42` `countExistingPickdropUsage`
-  - `src/services/pickdrop-usage-repair-service.js:31` `resolvePickdropTicketCountType`
 
 ### 2
 
@@ -448,10 +346,6 @@
 - Lines:
   - 선택된 픽드랍 날짜와 옵션 기준으로 새 픽드랍 사용 계획을 만든다.
   - 기존 서비스 usage는 유지하고 새 픽드랍 usage만 병합한다.
-- Evidence:
-  - `src/services/pickdrop-usage-repair-service.js:132` `repairReservationPickdropUsages`
-  - `src/services/pickdrop-usage-repair-service.js:159` `buildDateTicketUsagesMap`
-  - `src/services/pickdrop-usage-repair-service.js:168` `mergeUsagesKeepService`
 
 ### 3
 
@@ -463,25 +357,15 @@
 - Lines:
   - 회원 보유 픽드랍 이용권에 없는 ticket id는 복구 후보에서 제외한다.
   - 이 경우 재할당 결과가 기존 저장값과 달라질 수 있다.
-- Evidence:
-  - `src/services/pickdrop-detail-sync.js:75` `!memberPickdropTicketIds.has(ticketId)`
 
-## Logic Coverage
-
-| Spec Row | Logic IDs | Coverage Status | Notes |
-| --- | --- | --- | --- |
-| P | LI-017, LI-022 | Covered | 상세 동기화/서비스 usage 유지 반영 |
-| 1 | LI-021, LI-062 | Covered | 기존 usage 집계 반영 |
-| 2 | LI-024, LI-063~LI-067 | Covered | repair flow 반영 |
-| 3 | LI-036, LI-059 | Covered | 유효하지 않은 ticket 후보 제외 반영 |
 
 ---
 
-## Figma Section
+## Spec Section
 
 - Section title: `6. 호텔링 연계 픽드랍`
 - Capture ID: `hoteling-pickdrop`
-- Left side annotations: `P`, `1`, `2`, `3`
+- Row numbers: `P`, `1`, `2`, `3`
 
 ## Spec Header
 
@@ -489,7 +373,7 @@
 | --- | --- |
 | 상황 | 호텔링 예약에 픽업/하원 옵션과 픽드랍 이용권을 함께 반영 |
 | 화면명 | 호텔링 예약 모달 |
-| 경로 | `src/pages/hotels.html`, `src/pages/hotels.js` |
+| 경로 | 호텔링 예약 모달 |
 | Case | 체크인/체크아웃 기준 픽드랍 옵션 저장 |
 
 ## Spec Body Rows
@@ -504,10 +388,6 @@
 - Lines:
   - 호텔링 예약 모달도 픽업/하원 옵션, 픽드랍 금액, 픽드랍 이용권 영역을 제공한다.
   - 체크인 entry에는 pickup, 체크아웃 entry에는 dropoff를 연결한다.
-- Evidence:
-  - `src/pages/hotels.html:310` pickdrop option row
-  - `src/pages/hotels.html:416` pickdrop fee segment
-  - `src/pages/hotels.html:458` pickdrop ticket segment
 
 ### 1
 
@@ -519,10 +399,6 @@
 - Lines:
   - 옵션 변경 시 `modalState.pickdrops`에 값을 추가하거나 제거한다.
   - 변경 후 픽드랍 금액과 이용권 차감 표시를 갱신한다.
-- Evidence:
-  - `src/pages/hotels.js:3039` pickdrop option input
-  - `src/pages/hotels.js:3041` add pickdrop
-  - `src/pages/hotels.js:3043` delete pickdrop
 
 ### 2
 
@@ -534,11 +410,6 @@
 - Lines:
   - 호텔링 저장 시 픽드랍 날짜 수와 선택 이용권을 기준으로 사용 계획을 만든다.
   - 체크인/체크아웃 entry별로 픽드랍 usage를 결합한다.
-- Evidence:
-  - `src/pages/hotels.js:3181` `buildPickdropUsagePlan`
-  - `src/pages/hotels.js:3202` checkin usage
-  - `src/pages/hotels.js:3205` checkout usage
-  - `src/pages/hotels.js:3223` entry usage merge
 
 ### 3
 
@@ -550,30 +421,9 @@
 - Lines:
   - 현재 코드는 체크인/체크아웃 entry에 픽드랍 usage를 분리해서 연결한다.
   - 제품 정책상 왕복 1회로 볼지, 날짜별 편도 2회로 볼지 확정이 필요하다.
-- Evidence:
-  - `src/pages/hotels.js:3208` pickup usages
-  - `src/pages/hotels.js:3213` dropoff usages
 
-## Logic Coverage
-
-| Spec Row | Logic IDs | Coverage Status | Notes |
-| --- | --- | --- | --- |
-| P | LI-015, LI-016, LI-037 | Covered | 호텔링 진입/차감 흐름 반영 |
-| 1 | hotels.js:3039~3043 | Covered | 옵션 변경 반영 |
-| 2 | LI-016, LI-090, LI-091 | Covered | entry별 usage 결합 반영 |
-| 3 | hotels.js:3208~3214 | Open Question | 호텔링 왕복 정책은 제품 확인 필요 |
 
 ## Open Questions
 
 - 호텔링에서 픽업+하원을 선택했을 때 왕복 이용권 1회 차감인지, 체크인/체크아웃 각각 편도 차감인지 정책 확정이 필요하다.
 - 픽드랍 이용권 부족 또는 초과 예약 상태에서 저장을 차단할지, 경고 후 허용할지 확정이 필요하다.
-
-## Implementation Evidence
-
-- `src/pages/reservation.js`: 픽드랍 모드 전환, 날짜/옵션 상태, 저장 분기, 날짜 entry 생성.
-- `src/services/pickdrop-policy.js`: 픽업/하원 조합의 편도/왕복 판정.
-- `src/services/ticket-reservation-service.js`: 픽드랍 이용권 우선/대체 차감 계획.
-- `src/services/reservation-date-fee.js`: 편도/왕복 금액 계산 입력.
-- `src/services/pickdrop-detail-sync.js`: 상세 수정 시 회원 보유 픽드랍 이용권 후보 동기화.
-- `src/services/pickdrop-usage-repair-service.js`: 기존 예약의 픽드랍 usage 복구 및 병합.
-- `src/pages/hotels.html`, `src/pages/hotels.js`: 호텔링 픽드랍 옵션, 금액, 이용권, 저장 결합 흐름.
