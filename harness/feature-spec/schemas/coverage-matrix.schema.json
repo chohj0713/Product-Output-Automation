@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feature Spec Coverage Matrix",
+  "type": "object",
+  "required": ["feature", "items"],
+  "properties": {
+    "feature": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "category", "summary", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["UI", "State", "Validation", "Pricing", "Ticket Usage", "Persistence", "Repair/Migration", "Edge Case", "Unknown"]
+          },
+          "summary": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["Covered", "Partial", "Not Covered", "Open Question"]
+          },
+          "figmaSection": { "type": "string" },
+          "specRow": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}
