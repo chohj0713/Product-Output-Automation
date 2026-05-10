@@ -1,39 +1,37 @@
-# Readability Validation: 픽드랍 예약 v4
+# Readability Validation: 픽드랍 예약
 
 ## Target
 
 | Field | Value |
 | --- | --- |
 | Figma file | `[26-XX] 픽드랍 예약` |
-| Figma page | `픽드랍 상세 기능명세 v4` |
+| Figma page | `픽드랍 기능명세` |
 | Figma URL | https://www.figma.com/design/WCxDoUASusnVpKd3GWc93R/-26-XX--%ED%94%BD%EB%93%9C%EB%9E%8D-%EC%98%88%EC%95%BD?node-id=0-1 |
-| Validation date | 2026-05-09 |
+| Validation date | 2026-05-10 |
 
-## Structural Checks
+## Markdown Checks
+
+| Check | Result | Notes |
+| --- | --- | --- |
+| Feature spec exists | Pass | `pickdrop-reservation-feature-spec.md` |
+| Body rows exist | Pass | `기능 요구사항` sections used |
+| Source-detail blocks hidden | Pass | No row-level source-detail blocks |
+| Implementation source details hidden | Pass | No implementation source-detail section |
+| Logic coverage hidden | Pass | Internal coverage remains in `coverage-matrix.md` only |
+| Korean text sanity | Pass | No mojibake pattern found |
+
+## Figma Checks
 
 | Check | Result | Notes |
 | --- | --- | --- |
 | Page exists | Pass | Page id `0:1` |
-| Top-level section count | Pass | 6 section frames |
-| Top-level stray nodes | Pass | 0 stray nodes |
-| Section naming | Pass | `1. 픽드랍 목록 및 예약 진입` through `6. 호텔링 연계 픽드랍` |
-| Capture/spec split | Pass | Each section has one capture panel and one spec panel |
-| Callout mapping | Pass | Every callout has a matching spec row |
-| Logic Coverage block | Pass | Every section includes `Logic Coverage` |
+| Page title | Pass | `픽드랍 기능명세` |
+| Top-level frames | Pass | 11 frames: overview + 10 spec sections |
+| Text-first structure | Pass | Sections contain title, context, and behavior rows |
+| Source-detail text hidden | Pass | No code source details, file paths, line numbers, or coverage IDs exposed |
 
-## Coverage-Oriented Checks
+## Remaining Open Items
 
-| Check | Result | Notes |
-| --- | --- | --- |
-| UI entry logic | Pass | 목록/필터/예약 진입 section added |
-| Mode/state logic | Pass | `setPickdropMode`, date initialization, option state covered |
-| Pricing/ticket logic | Pass | 편도/왕복, 금액, 이용권 차감 priority covered |
-| Persistence logic | Pass | `includePickdrop`, date merge, ticket usage merge covered |
-| Repair/sync logic | Pass | `pickdrop-detail-sync` and `pickdrop-usage-repair-service` covered |
-| Hoteling logic | Partial | Main flow covered; hoteling capture and 왕복 차감 정책 remain open |
-
-## Remaining Improvements
-
-- Replace the section 6 capture slot with `captures/04-hoteling-pickdrop.png` when available.
-- Confirm hoteling 왕복 차감 policy.
-- Confirm whether over-limit pickdrop ticket usage blocks save or allows warning-only save.
+- Decide whether insufficient 픽드랍 이용권 blocks save or allows over-limit save.
+- Decide hoteling 왕복 차감 기준.
+- Decide whether pickup-only and dropoff-only should both display as `편도` or be labeled separately.

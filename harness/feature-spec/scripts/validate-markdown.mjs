@@ -18,7 +18,7 @@ checkFile(captureIndexPath, "Capture index");
 if (existsSync(specPath)) {
   const spec = readFileSync(specPath, "utf8");
   requireText(spec, "Output Metadata", "Feature spec has output metadata");
-  requireText(spec, "Spec Body Rows", "Feature spec has body rows");
+  requireAny(spec, ["Spec Body Rows", "기능 요구사항"], "Feature spec has body rows");
   rejectText(spec, "Evidence:", "Feature spec has no row-level evidence blocks");
   rejectText(spec, "Implementation Evidence", "Feature spec has no implementation evidence section");
   rejectText(spec, "Logic Coverage", "Feature spec has no logic coverage section");
