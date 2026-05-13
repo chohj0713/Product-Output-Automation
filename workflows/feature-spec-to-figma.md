@@ -2,151 +2,102 @@
 
 ## Goal
 
-Create a detailed feature specification from a code-based prototype. The main output is Markdown text. Figma is optional and should be used only when the user explicitly asks for visual placement.
+Create a PM collaboration feature spec from code and product input. The Figma final output must use this structure: platform header -> feature sections -> numbered item frame -> `Container`.
 
-The workflow uses code analysis to prevent missing branches and constraints, but the final feature spec must not expose code evidence, file paths, line numbers, source symbols, or `LI-*` IDs.
+## Output Order
 
-## Required Outputs
+1. `internal/candidate-files.md`
+2. `internal/logic-inventory.md`
+3. `internal/coverage-matrix.md`
+4. `internal/domain-rule-map.md`
+5. `internal/open-questions.md`
+6. `human/00-feature-summary.md`
+7. `human/platform-map.md`
+8. `human/screen-case-map.md`
+9. `human/policy-table.md`
+10. `human/state-matrix.md`
+11. `human/ui-element-spec.md`
+12. `human/decision-log.md`
+13. `human/event-tracking.md`
+14. Ask the user how to handle open questions.
+15. `human/<feature>-feature-spec.md`
+16. `human/readability-validation.md`
+17. `human/figma-card-data.json`
+18. `human/figma-create-canonical-cards.js`
 
-Store all feature outputs under `outputs/<feature>/`.
+Legacy flat files may exist at `outputs/<feature>/` for compatibility.
 
-```text
-outputs/<feature>/
-  candidate-files.md
-  logic-inventory.md
-  coverage-matrix.md
-  open-questions.md
-  <feature>-feature-spec.md
-  capture-index.md
-  readability-validation.md
-  captures/
+## Figma Final Output Shape
+
+- Create only the written spec side as `Container`.
+- Treat the reference node `MGMCrXQxxIvOkCAAw3bxCq / 77:501` as the canonical card template.
+- Convert the screen-first Markdown spec into card-first data before creating Figma nodes.
+- Follow this hierarchy:
+  - Platform header frame, for example `픽드랍 / 비즈 Web`.
+  - `SECTION` per feature screen or user-facing case.
+  - Numbered frame per spec item, for example `1`, `2`, `2-1`.
+  - Inside each numbered frame, create one child frame named exactly `Container`.
+  - Inside `Container`, create `Title` and numbered `설명` blocks.
+- Container content follows this pattern:
+  - `Title`: 상황/도메인 title, 화면명, 화면 경로, Case.
+  - `설명`: numbered behavior blocks with concise product-facing text.
+  - Use screen area and UI item language inside descriptions.
+
+## Canonical Card Data
+
+Generate Figma data after the final Markdown spec:
+
+```powershell
+node .\harness\feature-spec\scripts\build-figma-card-output.mjs `
+  --feature "<feature>" `
+  --output ".\outputs\<feature>" `
+  --spec ".\outputs\<feature>\human\<feature>-feature-spec.md"
 ```
 
-## Step 1: Code Candidate Collection
+The command writes:
 
-Search the prototype before writing any spec. This is internal analysis, not final spec text.
+- `human/figma-card-data.json`: normalized `situation`, `screenName`, `screenPath`, `caseName`, and `blocks`.
+- `human/figma-create-canonical-cards.js`: Figma Plugin API script that creates the canonical `840px` `Container` cards.
 
-- Search feature keywords, Korean UI copy, data attributes, and related English terms.
-- Identify candidate files in page, component, service, storage, policy, and repair modules.
-- Classify every candidate along two axes:
-  - `Logic Type`: `Business`, `UI`, `Integration`, `Unknown`
-  - `Category`: `UI`, `State`, `Validation`, `Pricing`, `Ticket Usage`, `Persistence`, `Repair/Migration`, `Edge Case`, `Unknown`
+## Rules
 
-Recommended command:
+- Use platform, screen, screen area, and UI item mapping before writing the final spec.
+- Keep internal audit files out of the final spec.
+- Ask the user how to handle open questions before final spec writing.
+- Write final specs by actual screen.
+- Split each screen by visible screen areas.
+- Describe behavior item by item inside each screen area.
+- Use this hierarchy: `Platform -> Screen -> Screen Area -> UI Item -> Behavior / Exception / State / Data Impact`.
+- Final specs use `Screen Header`, `Context`, `Screen Areas`, `UI Item Spec`, `Screen-level States`, and `Policy Notes`.
+- Policies support visible screen behavior only; do not use `Core Policies` as the organizing structure.
+- Do not create generic callout boards without a real screen structure.
+- For Figma output, convert the screen-first Markdown into Container-only numbered descriptions.
+- Do not send raw Markdown tables directly to Figma.
+- Do not use a single `설명 제목` + `설명 본문` text block; preserve numbered `설명` blocks, bullet hierarchy, and item type labels such as `[Input]`, `[Option]`, `[Button]`, and `[State]`.
+- Final spec must not include code evidence, file paths, function names, raw coverage details, or `LI-*` IDs.
+- Default internal output is summary-only. Use `--detail` only for audits.
+
+## Open Question Handling Options
+
+When open questions exist, ask the user to choose one:
+
+- Resolve now: pause final spec until the user answers.
+- Apply recommended defaults: write the final spec using defaults and track decisions.
+- Leave as follow-up: omit unresolved behavior from final spec and keep it in `internal/open-questions.md`.
+
+## Commands
 
 ```powershell
 node .\harness\feature-spec\scripts\analyze-feature.mjs `
+  --project "<project name with target/platform, e.g. Schedule Daycare Biz Web>" `
   --feature "<feature>" `
   --prototype "<prototype path>" `
   --output ".\outputs\<feature>" `
   --keywords "<keyword1>,<keyword2>"
 ```
 
-## Step 2: Logic Planning
-
-Before writing the final spec, make a short plan with three groups:
-
-1. `Business Logic`
-   - product policy,
-   - calculations,
-   - ticket/usage rules,
-   - persistence and update rules,
-   - constraints and exceptions.
-2. `UI Logic`
-   - entry points,
-   - visible state,
-   - option/input behavior,
-   - enabled/disabled states,
-   - empty/error/copy states.
-3. `Integration Mapping`
-   - which UI action triggers which business rule,
-   - which business rule changes what the user sees,
-   - which screen case needs an open question.
-
-## Step 3: Logic Inventory
-
-Create `outputs/<feature>/logic-inventory.md` using `templates/logic-inventory.md`.
-
-The inventory is an internal working artifact. It may include source locations and code facts because it exists to prevent omission. Do not copy those source details into the final feature spec.
-
-Separate items when they affect behavior:
-
-- UI entry/exit paths,
-- selected state and initialization,
-- disabled/empty/over-limit conditions,
-- pricing and allocation rules,
-- save/update payload differences,
-- repair or existing-data compatibility,
-- fallback behavior.
-
-## Step 4: Coverage Matrix
-
-Create `outputs/<feature>/coverage-matrix.md` using `templates/coverage-matrix.md`.
-
-Every logic inventory item must have exactly one status:
-
-- `Covered`: reflected in the spec as confirmed behavior.
-- `Partial`: partly reflected; missing conditions are named.
-- `Not Covered`: not reflected; exclusion or follow-up required.
-- `Open Question`: cannot be confirmed from code alone.
-
-The matrix is internal. The final feature spec should summarize behavior, not show matrix IDs.
-
-## Step 5: Feature Spec Text
-
-Create the final feature spec using `templates/feature-spec.md`.
-
-Each section should include:
-
-- context,
-- `Business Logic`,
-- `UI Logic`,
-- `Integration Notes`,
-- assumptions,
-- open questions.
-
-Do not include:
-
-- code evidence,
-- file paths,
-- line numbers,
-- source symbols,
-- implementation evidence sections,
-- `Logic Coverage` tables,
-- `LI-*` IDs.
-
-## Step 6: Capture Handling
-
-Captures are optional for text-first specs. Use them only to clarify screen context.
-
-- Store captures under `outputs/<feature>/captures/`.
-- Maintain `outputs/<feature>/capture-index.md` when captures are used.
-- Do not block text spec completion on missing captures.
-
-## Step 7: Validation
-
-Run Markdown validation before final delivery.
-
 ```powershell
 node .\harness\feature-spec\scripts\validate-markdown.mjs `
   --output ".\outputs\<feature>" `
-  --spec ".\outputs\<feature>\<feature>-feature-spec.md"
+  --spec ".\outputs\<feature>\human\<feature>-feature-spec.md"
 ```
-
-Required checks:
-
-- feature spec exists,
-- logic inventory exists,
-- coverage matrix exists,
-- capture index exists when captures are used,
-- coverage statuses are present in the internal matrix,
-- logic inventory and coverage matrix contain `Logic Type`,
-- final feature spec contains `Business Logic` and `UI Logic`,
-- final feature spec has no evidence blocks or logic coverage sections,
-- Korean text is not mojibake.
-
-## Encoding Standard
-
-- Save Markdown as UTF-8.
-- Treat PowerShell mojibake as terminal display unless the file itself contains mojibake.
-- If generated Korean text contains broken sequences, fix the file before delivery.
