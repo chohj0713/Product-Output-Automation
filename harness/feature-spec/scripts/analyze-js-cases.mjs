@@ -6,23 +6,26 @@ const args = parseArgs(process.argv.slice(2));
 const feature = required(args.feature, "--feature");
 const prototypePath = path.resolve(required(args.prototype, "--prototype"));
 const outputPath = path.resolve(required(args.output, "--output"));
-const keywords = splitList(args.keywords || feature);
 const maxCases = Number(args.maxCases || 160);
 
 if (!existsSync(prototypePath)) throw new Error(`Prototype path not found: ${prototypePath}`);
 mkdirSync(outputPath, { recursive: true });
 
 const sourceFiles = listFiles(prototypePath).filter(isJavaScriptSource);
-const relevantFiles = rankRelevantFiles(sourceFiles, keywords).slice(0, Number(args.maxFiles || 80));
+const featureProfile = buildFeatureProfile(feature, splitList(args.keywords || ""), sourceFiles);
+const keywords = featureProfile.searchTerms;
+const relevantFiles = rankRelevantFiles(sourceFiles, featureProfile).slice(0, Number(args.maxFiles || 80));
 const inventory = buildCaseInventory({
   feature,
   prototypePath,
+  featureProfile,
   keywords,
   sourceFiles,
   relevantFiles,
   maxCases
 });
 
+writeJson(path.join(outputPath, "feature-profile.json"), featureProfile);
 writeJson(path.join(outputPath, "case-inventory.json"), inventory);
 writeFileSync(path.join(outputPath, "01-case-inventory.md"), renderCaseInventory(inventory), "utf8");
 writeFileSync(path.join(outputPath, "02-policy-gaps.md"), renderPolicyGaps(inventory), "utf8");
@@ -30,6 +33,8 @@ writeFileSync(path.join(outputPath, "02-policy-gaps.md"), renderPolicyGaps(inven
 console.log(JSON.stringify({
   feature,
   outputPath,
+  profileConfidence: featureProfile.confidence,
+  searchTerms: featureProfile.searchTerms,
   sourceFileCount: sourceFiles.length,
   relevantFileCount: relevantFiles.length,
   caseGroupCount: inventory.caseGroups.length,
@@ -77,9 +82,102 @@ function isJavaScriptSource(file) {
   return [".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"].includes(path.extname(file).toLowerCase());
 }
 
-function rankRelevantFiles(files, keys) {
-  const normalized = keys.map((key) => key.toLowerCase()).filter(Boolean);
-  const specific = getSpecificKeywords(keys);
+function buildFeatureProfile(featureName, manualKeywords, files) {
+  const aliases = unique([
+    featureName,
+    ...manualKeywords,
+    ...deriveNameVariants(featureName),
+    ...deriveTokenVariants(featureName)
+  ]).map((item) => item.trim()).filter(Boolean);
+  const codeSignals = discoverCodeSignals(files, aliases);
+  const domainTerms = unique([
+    ...aliases,
+    ...codeSignals.selectorTerms,
+    ...codeSignals.fileTerms,
+    ...codeSignals.functionTerms
+  ]).filter((term) => !isGenericTerm(term)).slice(0, 80);
+  const searchTerms = getSpecificKeywords(domainTerms.length ? domainTerms : aliases);
+  const confidence = manualKeywords.length > 0
+    ? "high"
+    : searchTerms.length >= 3
+      ? "medium"
+      : "low";
+  return {
+    version: 1,
+    feature: featureName,
+    generatedAt: new Date().toISOString(),
+    aliases,
+    searchTerms,
+    domainTerms,
+    negativeTerms: [],
+    entrySignals: ["addEventListener", "querySelector", "classList", "disabled", "hidden", "submit", "save", "update", "delete"],
+    expectedLogicTypes: ["event", "mode", "validation", "state", "submit", "pricing", "ticket", "date", "storage"],
+    confidence,
+    notes: confidence === "low"
+      ? ["Keyword confidence is low. Ask the user to confirm feature-specific terms before finalizing case inventory."]
+      : []
+  };
+}
+
+function deriveNameVariants(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+  const words = raw
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(/[\s/_-]+/)
+    .map((word) => word.trim())
+    .filter(Boolean);
+  const lowerWords = words.map((word) => word.toLowerCase());
+  const pascal = words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join("");
+  const camel = pascal ? pascal.charAt(0).toLowerCase() + pascal.slice(1) : "";
+  return unique([
+    raw,
+    raw.toLowerCase(),
+    lowerWords.join("-"),
+    lowerWords.join("_"),
+    lowerWords.join(""),
+    camel,
+    pascal
+  ]);
+}
+
+function deriveTokenVariants(value) {
+  return String(value || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(/[\s/_\-()[\],.]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+function discoverCodeSignals(files, aliases) {
+  const aliasTerms = getSpecificKeywords(aliases);
+  const selectorTerms = [];
+  const fileTerms = [];
+  const functionTerms = [];
+  files.forEach((file) => {
+    const short = shortPath(file).toLowerCase();
+    const basename = path.basename(file, path.extname(file));
+    if (aliasTerms.some((term) => short.includes(term))) fileTerms.push(...deriveTokenVariants(basename));
+    const text = readFileSync(file, "utf8");
+    const lower = text.toLowerCase();
+    if (!aliasTerms.some((term) => lower.includes(term) || short.includes(term))) return;
+    extractSelectors(text).forEach((selector) => {
+      selectorTerms.push(...deriveTokenVariants(selector.replace(/data-|[\[\]="'#.]/g, " ")));
+    });
+    for (const match of text.matchAll(/\b(?:function|const|let|var)\s+([A-Za-z0-9_$]+)\b/g)) {
+      functionTerms.push(...deriveTokenVariants(match[1]));
+    }
+  });
+  return {
+    selectorTerms: unique(selectorTerms).filter((term) => term.length >= 3).slice(0, 40),
+    fileTerms: unique(fileTerms).filter((term) => term.length >= 3).slice(0, 30),
+    functionTerms: unique(functionTerms).filter((term) => term.length >= 3).slice(0, 30)
+  };
+}
+
+function rankRelevantFiles(files, profile) {
+  const normalized = profile.searchTerms.map((key) => key.toLowerCase()).filter(Boolean);
+  const specific = getSpecificKeywords(normalized);
   return files.map((file) => {
     const text = readFileSync(file, "utf8");
     const lower = text.toLowerCase();
@@ -93,9 +191,9 @@ function rankRelevantFiles(files, keys) {
     .sort((a, b) => b.score - a.score || a.file.localeCompare(b.file));
 }
 
-function buildCaseInventory({ feature, prototypePath, keywords, sourceFiles, relevantFiles, maxCases }) {
-  const rawCases = relevantFiles.flatMap((row) => extractCasesFromFile(row.file, keywords));
-  const grouped = groupCases(rawCases.slice(0, maxCases));
+function buildCaseInventory({ feature, prototypePath, featureProfile, keywords, sourceFiles, relevantFiles, maxCases }) {
+  const rawCases = relevantFiles.flatMap((row) => extractCasesFromFile(row.file, featureProfile));
+  const grouped = groupCases(rawCases.slice(0, maxCases), featureProfile);
   const policyGaps = grouped.flatMap((group) => group.cases.flatMap((item) => inferPolicyGaps(item)));
   policyGaps.forEach((gap, index) => {
     gap.id = `GAP-${String(index + 1).padStart(3, "0")}`;
@@ -118,6 +216,7 @@ function buildCaseInventory({ feature, prototypePath, keywords, sourceFiles, rel
     prototype: prototypePath,
     generatedAt: new Date().toISOString(),
     analysisMode: "js-case-first",
+    featureProfile,
     keywords,
     summary: {
       sourceFileCount: sourceFiles.length,
@@ -131,14 +230,14 @@ function buildCaseInventory({ feature, prototypePath, keywords, sourceFiles, rel
   };
 }
 
-function extractCasesFromFile(file, keywords) {
+function extractCasesFromFile(file, featureProfile) {
   const text = readFileSync(file, "utf8");
   const lines = text.split(/\r?\n/);
   const cases = [];
   lines.forEach((line, index) => {
     if (!isPotentialCaseSeed(line)) return;
     const block = collectBlock(lines, index);
-    if (!matchesFeatureFocus(`${line}\n${block}`, file, keywords)) return;
+    if (!matchesFeatureFocus(`${line}\n${block}`, file, featureProfile)) return;
     const trigger = inferTrigger(line, block);
     const selectors = unique([...extractSelectors(line), ...extractSelectors(block)]);
     const conditions = extractConditions(block);
@@ -167,8 +266,8 @@ function isPotentialCaseSeed(line) {
   return hasTrigger || hasLogic;
 }
 
-function matchesFeatureFocus(text, file, keywords) {
-  const specific = getSpecificKeywords(keywords);
+function matchesFeatureFocus(text, file, featureProfile) {
+  const specific = getSpecificKeywords(featureProfile.searchTerms || []);
   if (!specific.length) return true;
   const lower = `${text}\n${file}`.toLowerCase();
   return specific.some((key) => lower.includes(key));
@@ -181,14 +280,114 @@ function getSpecificKeywords(keys) {
     "booking",
     "modal",
     "form",
-    "예약",
-    "등록",
-    "모달",
-    "기능"
+    "page",
+    "screen",
+    "button",
+    "click",
+    "change",
+    "submit",
+    "input",
+    "list",
+    "table",
+    "check",
+    "cell",
+    "status",
+    "statuses",
+    "card",
+    "title",
+    "text",
+    "primary",
+    "date",
+    "rows",
+    "row",
+    "open",
+    "close",
+    "filter",
+    "picker",
+    "prev",
+    "next",
+    "cancel",
+    "confirm",
+    "detail",
+    "save",
+    "memo",
+    "edit",
+    "time",
+    "times",
+    "class",
+    "classes",
+    "options",
+    "option",
+    "trigger",
+    "value",
+    "menu",
+    "type",
+    "types",
+    "service",
+    "load",
+    "from",
+    "storage",
+    "resolve",
+    "stored",
+    "merge",
+    "all",
+    "non",
+    "format",
+    "key",
+    "year",
+    "month",
+    "data",
+    "item",
+    "items",
+    "element",
+    "elements",
+    "container",
+    "wrapper",
+    "overlay",
+    "info",
+    "order",
+    "without",
+    "build",
+    "icon",
+    "attr",
+    "mini",
+    "calendar",
+    "controls",
+    "day",
+    "names",
+    "segment",
+    "progress",
+    "step",
+    "render",
+    "root",
+    "get",
+    "markup",
+    "html",
+    "left",
+    "area",
+    "right",
+    "footer",
+    "\uC608\uC57D",
+    "\uC608\uC57D\uB4F1\uB85D",
+    "\uB4F1\uB85D",
+    "\uBAA8\uB2EC",
+    "\uAE30\uB2A5",
+    "\uBC84\uD2BC",
+    "\uD654\uBA74"
   ]);
-  return keys
+  return unique(keys
     .map((key) => key.toLowerCase().trim())
-    .filter((key) => key && !generic.has(key));
+    .filter((key) => key && key.length >= 2 && !isGenericKeyword(key, generic) && !/^\d+$/.test(key)));
+}
+
+function isGenericTerm(term) {
+  return !getSpecificKeywords([term]).length;
+}
+
+function isGenericKeyword(key, generic) {
+  if (generic.has(key)) return true;
+  const tokens = deriveTokenVariants(key).map((token) => token.toLowerCase());
+  return tokens.length > 1 && tokens.every((token) => generic.has(token));
 }
 
 function collectBlock(lines, startIndex) {
@@ -260,12 +459,12 @@ function extractStateChanges(block) {
 
 function inferExpectedBehavior(block, line) {
   const behaviors = [];
-  if (/setPickdropMode\s*\(\s*true/.test(block)) behaviors.push("Enter pickdrop mode.");
-  if (/setPickdropMode\s*\(\s*false/.test(block)) behaviors.push("Return to service reservation mode.");
-  if (/submitReservation/.test(block)) behaviors.push("Submit reservation data.");
-  if (/renderMiniCalendar/.test(block)) behaviors.push("Refresh selectable date UI.");
-  if (/refreshTicketOptions/.test(block)) behaviors.push("Refresh available ticket options.");
-  if (/syncPricingFee/.test(block)) behaviors.push("Recalculate pricing and fee summary.");
+  if (/set[A-Za-z0-9_$]*Mode\s*\(\s*true/.test(block)) behaviors.push("Enter feature mode.");
+  if (/set[A-Za-z0-9_$]*Mode\s*\(\s*false/.test(block)) behaviors.push("Exit feature mode.");
+  if (/submit[A-Za-z0-9_$]*|save[A-Za-z0-9_$]*|create[A-Za-z0-9_$]*/.test(block)) behaviors.push("Submit or save feature data.");
+  if (/render[A-Za-z0-9_$]*Calendar/.test(block)) behaviors.push("Refresh selectable date UI.");
+  if (/refresh[A-Za-z0-9_$]*Ticket|render[A-Za-z0-9_$]*Ticket/.test(block)) behaviors.push("Refresh available ticket options.");
+  if (/sync[A-Za-z0-9_$]*(Pricing|Fee)|render[A-Za-z0-9_$]*(Pricing|Fee)/.test(block)) behaviors.push("Recalculate pricing and fee summary.");
   if (/showToast/.test(block)) behaviors.push("Show user feedback toast.");
   if (/disabled\s*=/.test(block)) behaviors.push("Update enabled or disabled state.");
   if (/hidden\s*=/.test(block)) behaviors.push("Show or hide dependent UI.");
@@ -276,25 +475,25 @@ function inferExpectedBehavior(block, line) {
 
 function inferDataImpact(block) {
   const impacts = [];
-  if (/submit|save|create|addReservation|notifyReservationUpdated/i.test(block)) impacts.push("write reservation data");
+  if (/submit|save|create|add|notify[A-Za-z0-9_$]*Updated/i.test(block)) impacts.push("write feature data");
   if (/delete|remove/i.test(block)) impacts.push("delete or remove data");
   if (/localStorage|storage\./.test(block)) impacts.push("read/write local storage state");
-  if (/ticketSelections|pickdropDates|selectedDates|pickdrops|services/.test(block)) impacts.push("mutate form state");
+  if (/Selections|selected|Dates|services|state\./.test(block)) impacts.push("mutate form state");
   if (/pricing|fee|total/i.test(block)) impacts.push("recalculate billing data");
   return unique(impacts).slice(0, 8);
 }
 
 function inferCaseTitle(trigger, conditions, expectedBehavior, selectors) {
-  const selectorHint = selectors.find((item) => item.includes("pickdrop")) || selectors[0] || "";
+  const selectorHint = selectors[0] || "";
   const conditionHint = conditions[0] ? ` when ${conditions[0]}` : "";
   const behaviorHint = expectedBehavior[0] || "handle logic";
   return `${trigger}${selectorHint && !trigger.includes(selectorHint) ? ` / ${selectorHint}` : ""}${conditionHint} -> ${behaviorHint}`;
 }
 
-function groupCases(rawCases) {
+function groupCases(rawCases, featureProfile) {
   const byGroup = new Map();
   rawCases.forEach((item) => {
-    const groupTitle = inferGroupTitle(item);
+    const groupTitle = inferGroupTitle(item, featureProfile);
     const group = byGroup.get(groupTitle) || {
       id: `CG-${String(byGroup.size + 1).padStart(2, "0")}`,
       title: groupTitle,
@@ -320,13 +519,15 @@ function groupCases(rawCases) {
   return [...byGroup.values()];
 }
 
-function inferGroupTitle(item) {
+function inferGroupTitle(item, featureProfile = {}) {
   const text = `${item.trigger} ${item.title} ${item.uiSelectors.join(" ")}`.toLowerCase();
-  if (text.includes("pickdrop") && text.includes("mode")) return "Pickdrop mode transition";
-  if (text.includes("pickdrop") && /ticket|usage|reservable/.test(text)) return "Pickdrop ticket and usage";
-  if (text.includes("pickdrop") && /date|calendar/.test(text)) return "Pickdrop date selection";
-  if (text.includes("pickdrop")) return "Pickdrop option behavior";
-  if (/submit|save|register/.test(text)) return "Submit and persistence";
+  const hasFeatureTerm = (featureProfile.searchTerms || []).some((term) => text.includes(String(term).toLowerCase()));
+  if (/mode|active|complete|step/.test(text) && hasFeatureTerm) return "Feature mode transition";
+  if (/ticket|usage|reservable|remaining/.test(text) && hasFeatureTerm) return "Ticket and usage";
+  if (/date|calendar|day/.test(text) && hasFeatureTerm) return "Date selection";
+  if (/option|checkbox|radio|select|chip/.test(text) && hasFeatureTerm) return "Option selection";
+  if (/pricing|fee|total|payment/.test(text)) return "Pricing and payment";
+  if (/submit|save|register|create|update|delete/.test(text)) return "Submit and persistence";
   if (/disabled|hidden|active|complete/.test(text)) return "UI state behavior";
   return `Logic in ${path.basename(item.file)}`;
 }
@@ -340,11 +541,11 @@ function inferPolicyGaps(item) {
   if (/hidden|show or hide/.test(lower)) {
     gaps.push(gap(item.id, "state", "Should hidden dependent UI preserve previous selections or reset them?", "Visibility changes can leave stale selections unless policy is explicit.", "Reset hidden dependent selections when leaving the mode."));
   }
-  if (/submit|write reservation/.test(lower)) {
-    gaps.push(gap(item.id, "exception", "What should happen on submit failure or partial pickdrop reservation failure?", "Submit branch is detected but failure handling policy is not guaranteed.", "Keep modal open and show an error toast."));
+  if (/submit|write feature/.test(lower)) {
+    gaps.push(gap(item.id, "exception", "What should happen on submit/save failure or partial processing failure?", "Submit or save branch is detected but failure handling policy is not guaranteed.", "Keep the current surface open and show an error toast."));
   }
   if (/limit|reservable|remaining|over/.test(lower)) {
-    gaps.push(gap(item.id, "policy", "How should the UI behave when selected dates exceed remaining reservable count?", "Code references limits or remaining counts.", "Trim auto-selected dates to the remaining reservable count and show count state."));
+    gaps.push(gap(item.id, "policy", "How should the UI behave when a selected quantity/date exceeds the available limit?", "Code references limits or remaining counts.", "Trim auto-selected values to the available limit and show count state."));
   }
   if (/textcontent|toast|label/.test(lower)) {
     gaps.push(gap(item.id, "copy", "Confirm final Korean copy for this state.", "Code changes visible text but copy may be prototype-only.", "Use current prototype copy as default."));
@@ -353,7 +554,16 @@ function inferPolicyGaps(item) {
 }
 
 function gap(caseId, type, question, reason, suggestedDefault) {
-  return { id: "", caseId, type, question, reason, suggestedDefault };
+  return {
+    id: "",
+    caseId,
+    type,
+    question,
+    reason,
+    suggestedDefault,
+    userDecision: "",
+    status: "Needs Review"
+  };
 }
 
 function renderCaseInventory(data) {
@@ -368,6 +578,15 @@ This is the first-stage output. It lists JS-derived UI and business cases before
 | Case groups | ${data.summary.caseGroupCount} |
 | Cases | ${data.summary.caseCount} |
 | Policy gaps | ${data.summary.policyGapCount} |
+| Feature profile confidence | ${data.featureProfile?.confidence || "-"} |
+
+## Feature Profile
+
+| Field | Value |
+| --- | --- |
+| Aliases | ${listInline(data.featureProfile?.aliases || [])} |
+| Search terms | ${listInline(data.featureProfile?.searchTerms || [])} |
+| Domain terms | ${listInline((data.featureProfile?.domainTerms || []).slice(0, 30))} |
 
 ${data.caseGroups.map(renderGroup).join("\n\n")}
 `;
@@ -389,9 +608,27 @@ function renderPolicyGaps(data) {
 
 Review this file before generating the final feature spec. Fill or confirm the gaps, then run the final output generation step.
 
-| Gap ID | Case ID | Type | Question | Why It Matters | Suggested Default |
-| --- | --- | --- | --- | --- | --- |
-${data.policyGaps.map((gapItem) => `| ${gapItem.id} | ${gapItem.caseId} | ${gapItem.type} | ${escapePipe(gapItem.question)} | ${escapePipe(gapItem.reason)} | ${escapePipe(gapItem.suggestedDefault)} |`).join("\n") || "| - | - | - | No policy gaps detected. | - | - |"}
+## Review Status
+
+| Metric | Count |
+| --- | ---: |
+| Needs Review | ${data.policyGaps.filter((gapItem) => gapItem.status === "Needs Review").length} |
+| Confirmed | ${data.policyGaps.filter((gapItem) => gapItem.status === "Confirmed").length} |
+| Default Applied | ${data.policyGaps.filter((gapItem) => gapItem.status === "Default Applied").length} |
+
+## Gap Review Table
+
+| Gap ID | Case ID | Type | Question | Why It Matters | Suggested Default | User Decision | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+${data.policyGaps.map((gapItem) => `| ${gapItem.id} | ${gapItem.caseId} | ${gapItem.type} | ${escapePipe(gapItem.question)} | ${escapePipe(gapItem.reason)} | ${escapePipe(gapItem.suggestedDefault)} | ${escapePipe(gapItem.userDecision)} | ${gapItem.status} |`).join("\n") || "| - | - | - | No policy gaps detected. | - | - | - | Confirmed |"}
+
+## Review Instructions
+
+1. Codex groups duplicate or similar gaps before asking the user.
+2. Codex asks only the highest-impact questions in chat.
+3. When the user answers, Codex updates \`User Decision\` and changes \`Status\` to \`Confirmed\`.
+4. If the user asks to apply defaults, Codex copies \`Suggested Default\` into \`User Decision\` and changes \`Status\` to \`Default Applied\`.
+5. Stage 2 can start only when no row remains \`Needs Review\`.
 `;
 }
 
@@ -419,6 +656,11 @@ function cleanExpr(value) {
 function listCell(values) {
   const list = unique(values || []).filter(Boolean);
   return list.length ? list.map((item) => `<code>${escapePipe(item)}</code>`).join("<br>") : "-";
+}
+
+function listInline(values) {
+  const list = unique(values || []).filter(Boolean);
+  return list.length ? list.map((item) => `\`${escapePipe(item)}\``).join(", ") : "-";
 }
 
 function escapePipe(value) {

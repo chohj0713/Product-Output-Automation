@@ -63,6 +63,4 @@
 - Do not structure the final spec around Core Policies.
 - Do not create generic callout boards without a real screen structure.
 - Do not list abstract policies without tying them to visible UI.
-- Keep screen planning in `case-plan.md`, not in the final spec.
-- Keep open questions in `open-questions.md`, not in the final spec.
-- Do not include code evidence, file paths, function names, or internal logic IDs.
+- Do not include code evidence, file paths, function names, or implementation IDs.

@@ -4,13 +4,8 @@ node_modules/
 .tmp/
 tmp/
 
-# Generated Figma embed artifacts
-outputs/**/captures/_figma_embed/
-outputs/**/captures/_figma_embed_small/
-
-# Optional raw analysis details
-outputs/**/logic-inventory.detail.md
-outputs/**/coverage-matrix.detail.md
+# Generated feature outputs
+outputs/
 
 # OS/editor noise
 .DS_Store

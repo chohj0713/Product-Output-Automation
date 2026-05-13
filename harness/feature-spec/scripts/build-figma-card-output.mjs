@@ -6,7 +6,7 @@ const args = parseArgs(process.argv.slice(2));
 const specPath = path.resolve(required(args.spec, "--spec"));
 const outputPath = path.resolve(required(args.output, "--output"));
 const feature = args.feature || path.basename(outputPath);
-const outDir = args.outDir ? path.resolve(args.outDir) : path.join(outputPath, "human");
+const outDir = args.outDir ? path.resolve(args.outDir) : outputPath;
 const dataPath = path.join(outDir, "figma-card-data.json");
 const scriptPath = path.join(outDir, "figma-create-canonical-cards.js");
 

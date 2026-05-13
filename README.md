@@ -1,6 +1,16 @@
 # Product Output Automation
 
-PM output automation workspace for Codex.
+Prototype-based feature spec generation workspace for Codex.
+
+## Purpose
+
+This project has one purpose: generate PM-readable feature specs from a prototype.
+
+The workflow is:
+
+1. Read prototype JavaScript and extract feature cases.
+2. Resolve policy/state/exception/copy gaps with the user.
+3. Generate the final feature spec and Figma card output.
 
 ## Canonical Skills
 
@@ -11,13 +21,7 @@ C:\Users\chohj\.codex\skills\product-js-case-inventory
 C:\Users\chohj\.codex\skills\product-spec-output-generator
 ```
 
-## Current Workflow
-
-The preferred workflow is **JS case-first** and split into two skills.
-
-### Stage 1: Case Inventory
-
-Generate only the code-derived case inventory and policy gaps.
+## Stage 1: Case Inventory
 
 Skill: `product-js-case-inventory`
 
@@ -25,11 +29,16 @@ Skill: `product-js-case-inventory`
 node .\harness\feature-spec\scripts\analyze-js-cases.mjs `
   --feature "<feature>" `
   --prototype "<prototype path>" `
-  --output ".\outputs\<feature>" `
-  --keywords "<keyword1>,<keyword2>"
+  --output ".\outputs\<feature>"
 ```
 
 Validate:
+
+```powershell
+node .\harness\feature-spec\scripts\validate-json.mjs `
+  --schema ".\harness\feature-spec\schemas\feature-profile.schema.json" `
+  --data ".\outputs\<feature>\feature-profile.json"
+```
 
 ```powershell
 node .\harness\feature-spec\scripts\validate-json.mjs `
@@ -41,18 +50,19 @@ Stage 1 writes:
 
 ```text
 outputs/<feature>/
+  feature-profile.json
   case-inventory.json
   01-case-inventory.md
   02-policy-gaps.md
 ```
 
-Stop here until the user fills or confirms policy/state/exception/copy/data gaps.
+Stop here until policy/state/exception/copy/data gaps are filled or confirmed.
 
-### Stage 2: Final Output
-
-After the user confirms gaps, generate:
+## Stage 2: Final Output
 
 Skill: `product-spec-output-generator`
+
+Stage 2 writes:
 
 ```text
 outputs/<feature>/
@@ -61,11 +71,13 @@ outputs/<feature>/
   figma-create-canonical-cards.js
 ```
 
-Figma output still uses the canonical `MGMCrXQxxIvOkCAAw3bxCq / 77:501` Container card structure.
+Figma output uses the canonical `MGMCrXQxxIvOkCAAw3bxCq / 77:501` Container card structure.
 
-## Analysis Rules
+## Rules
 
 - JS is the source of truth.
+- `feature-profile.json` is created before case inventory for every requested feature.
+- `--keywords` is optional; use it only when the feature name is ambiguous.
 - Track event handlers, state mutation, validation guards, mode transitions, submit branches, pricing/ticket/date logic, and service calls.
 - Use HTML only to clarify selector labels when JS is ambiguous.
 - Ignore CSS except when toggled classes encode product state.
@@ -77,16 +89,11 @@ Figma output still uses the canonical `MGMCrXQxxIvOkCAAw3bxCq / 77:501` Containe
 ```text
 harness/feature-spec/scripts/   analysis and validation scripts
 harness/feature-spec/schemas/   JSON contracts
-projects/                       project-specific notes
 prompts/                        short reusable prompts
 templates/                      output templates
 workflows/                      compact workflow docs
 outputs/<feature>/              feature-specific outputs
 ```
-
-## Legacy Support
-
-The previous `internal/` and `human/` output folders and screen-first scripts remain for compatibility, but new work should start with `analyze-js-cases.mjs`.
 
 ## Git Policy
 

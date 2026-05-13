@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "JS Case Inventory",
   "type": "object",
-  "required": ["version", "feature", "prototype", "generatedAt", "analysisMode", "keywords", "summary", "caseGroups", "policyGaps"],
+  "required": ["version", "feature", "prototype", "generatedAt", "analysisMode", "featureProfile", "keywords", "summary", "caseGroups", "policyGaps"],
   "additionalProperties": false,
   "properties": {
     "version": { "const": 1 },
@@ -10,6 +10,24 @@
     "prototype": { "type": "string" },
     "generatedAt": { "type": "string" },
     "analysisMode": { "const": "js-case-first" },
+    "featureProfile": {
+      "type": "object",
+      "required": ["version", "feature", "generatedAt", "aliases", "searchTerms", "domainTerms", "negativeTerms", "entrySignals", "expectedLogicTypes", "confidence", "notes"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "feature": { "type": "string" },
+        "generatedAt": { "type": "string" },
+        "aliases": { "type": "array", "items": { "type": "string" } },
+        "searchTerms": { "type": "array", "items": { "type": "string" } },
+        "domainTerms": { "type": "array", "items": { "type": "string" } },
+        "negativeTerms": { "type": "array", "items": { "type": "string" } },
+        "entrySignals": { "type": "array", "items": { "type": "string" } },
+        "expectedLogicTypes": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "enum": ["low", "medium", "high"] },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "keywords": { "type": "array", "items": { "type": "string" } },
     "summary": {
       "type": "object",
@@ -60,7 +78,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "caseId", "type", "question", "reason", "suggestedDefault"],
+        "required": ["id", "caseId", "type", "question", "reason", "suggestedDefault", "userDecision", "status"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
@@ -68,7 +86,9 @@
           "type": { "enum": ["policy", "state", "exception", "copy", "data"] },
           "question": { "type": "string" },
           "reason": { "type": "string" },
-          "suggestedDefault": { "type": "string" }
+          "suggestedDefault": { "type": "string" },
+          "userDecision": { "type": "string" },
+          "status": { "enum": ["Needs Review", "Confirmed", "Default Applied"] }
         }
       }
     }

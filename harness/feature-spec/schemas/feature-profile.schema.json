@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feature Profile",
+  "type": "object",
+  "required": [
+    "version",
+    "feature",
+    "generatedAt",
+    "aliases",
+    "searchTerms",
+    "domainTerms",
+    "negativeTerms",
+    "entrySignals",
+    "expectedLogicTypes",
+    "confidence",
+    "notes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "feature": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string" },
+    "aliases": { "type": "array", "items": { "type": "string" } },
+    "searchTerms": { "type": "array", "items": { "type": "string" } },
+    "domainTerms": { "type": "array", "items": { "type": "string" } },
+    "negativeTerms": { "type": "array", "items": { "type": "string" } },
+    "entrySignals": { "type": "array", "items": { "type": "string" } },
+    "expectedLogicTypes": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "enum": ["low", "medium", "high"] },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}
