@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JS Case Inventory",
+  "type": "object",
+  "required": ["version", "feature", "prototype", "generatedAt", "analysisMode", "keywords", "summary", "caseGroups", "policyGaps"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "feature": { "type": "string", "minLength": 1 },
+    "prototype": { "type": "string" },
+    "generatedAt": { "type": "string" },
+    "analysisMode": { "const": "js-case-first" },
+    "keywords": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "required": ["sourceFileCount", "relevantFileCount", "caseGroupCount", "caseCount", "policyGapCount"],
+      "additionalProperties": false,
+      "properties": {
+        "sourceFileCount": { "type": "number" },
+        "relevantFileCount": { "type": "number" },
+        "caseGroupCount": { "type": "number" },
+        "caseCount": { "type": "number" },
+        "policyGapCount": { "type": "number" }
+      }
+    },
+    "caseGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "sourceFiles", "cases"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "sourceFiles": { "type": "array", "items": { "type": "string" } },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "title", "trigger", "conditions", "expectedBehavior", "stateChanges", "dataImpact", "uiSelectors", "sourceRefs", "policyGapRefs"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string" },
+                "title": { "type": "string" },
+                "trigger": { "type": "string" },
+                "conditions": { "type": "array", "items": { "type": "string" } },
+                "expectedBehavior": { "type": "array", "items": { "type": "string" } },
+                "stateChanges": { "type": "array", "items": { "type": "string" } },
+                "dataImpact": { "type": "array", "items": { "type": "string" } },
+                "uiSelectors": { "type": "array", "items": { "type": "string" } },
+                "sourceRefs": { "type": "array", "items": { "type": "string" } },
+                "policyGapRefs": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "policyGaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "caseId", "type", "question", "reason", "suggestedDefault"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "caseId": { "type": "string" },
+          "type": { "enum": ["policy", "state", "exception", "copy", "data"] },
+          "question": { "type": "string" },
+          "reason": { "type": "string" },
+          "suggestedDefault": { "type": "string" }
+        }
+      }
+    }
+  }
+}
