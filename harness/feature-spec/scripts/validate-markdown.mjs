@@ -17,7 +17,10 @@ const files = {
 };
 const internalFiles = {
   candidateFiles: path.join(internalPath, "candidate-files.md"),
+  preprocessedCodeSummary: path.join(internalPath, "preprocessed-code-summary.md"),
+  preprocessedCodeSummaryJson: path.join(internalPath, "preprocessed-code-summary.json"),
   inventory: path.join(internalPath, "logic-inventory.md"),
+  inventoryJson: path.join(internalPath, "logic-inventory.json"),
   coverage: path.join(internalPath, "coverage-matrix.md"),
   domainRuleMap: path.join(internalPath, "domain-rule-map.md"),
   openQuestions: path.join(internalPath, "open-questions.md")
@@ -159,12 +162,26 @@ function validateInternalOutputs(map) {
   if (existsSync(map.candidateFiles)) {
     const text = readFileSync(map.candidateFiles, "utf8");
     requireText(text, "Candidate Files", "Internal candidate files has title");
+    requireText(text, "Pre-processing Summary", "Internal candidate files includes pre-processing summary");
     rejectMojibake(text, "Internal candidate files Korean sanity");
+  }
+  if (existsSync(map.preprocessedCodeSummary)) {
+    const text = readFileSync(map.preprocessedCodeSummary, "utf8");
+    requireText(text, "Preprocessed Code Summary", "Internal pre-processed summary has title");
+    requireText(text, "DOM Selector Mapping", "Internal pre-processed summary includes DOM selector mapping");
+    rejectMojibake(text, "Internal pre-processed summary Korean sanity");
+  }
+  if (existsSync(map.preprocessedCodeSummaryJson)) {
+    validatePreprocessedCodeSummary(readJson(map.preprocessedCodeSummaryJson), "Internal pre-processed JSON");
   }
   if (existsSync(map.inventory)) {
     const text = readFileSync(map.inventory, "utf8");
     requireText(text, "Logic Types", "Internal inventory has logic type summary");
+    requireText(text, "DOM Selector Mapping Table", "Internal inventory has DOM selector mapping table");
     rejectMojibake(text, "Internal inventory Korean sanity");
+  }
+  if (existsSync(map.inventoryJson)) {
+    validateLogicInventory(readJson(map.inventoryJson), "Internal inventory JSON");
   }
   if (existsSync(map.coverage)) {
     const text = readFileSync(map.coverage, "utf8");
@@ -207,6 +224,7 @@ function validateHumanOutputs(map) {
 function validateFigmaOutputs(map) {
   if (existsSync(map.figmaCardData)) {
     const text = readFileSync(map.figmaCardData, "utf8");
+    validateFigmaCardData(readJson(map.figmaCardData), "Figma card data JSON");
     requireText(text, "\"nodeId\": \"77:501\"", "Figma card data references canonical node");
     requireText(text, "\"cards\"", "Figma card data has cards");
     requireText(text, "\"blocks\"", "Figma card data has description blocks");
@@ -220,4 +238,50 @@ function validateFigmaOutputs(map) {
     requireText(text, "설명", "Figma create script creates description blocks");
     requireText(text, "hexToRgb(cardData.template.accent)", "Figma create script uses canonical accent");
   }
+}
+
+function readJson(file) {
+  try {
+    return JSON.parse(readFileSync(file, "utf8"));
+  } catch (error) {
+    results.push({ check: `${file} parses as JSON`, result: "Fail", target: error.message });
+    return null;
+  }
+}
+
+function validatePreprocessedCodeSummary(data, label) {
+  if (!data) return;
+  requireJson(data.version === 1, `${label} version is 1`, "version");
+  requireJson(Array.isArray(data.keywords), `${label} has keyword array`, "keywords");
+  requireJson(Array.isArray(data.domNodes), `${label} has DOM node array`, "domNodes");
+  requireJson(Array.isArray(data.eventListeners), `${label} has event listener array`, "eventListeners");
+  requireJson(Array.isArray(data.selectorMappings), `${label} has selector mapping array`, "selectorMappings");
+}
+
+function validateLogicInventory(data, label) {
+  if (!data) return;
+  requireJson(data.version === 1, `${label} version is 1`, "version");
+  requireJson(Boolean(data.feature), `${label} has feature`, "feature");
+  requireJson(Array.isArray(data.topCandidateFiles), `${label} has candidate files`, "topCandidateFiles");
+  requireJson(Array.isArray(data.items), `${label} has logic items`, "items");
+  requireJson(Array.isArray(data.domSelectorMappings), `${label} has DOM selector mappings`, "domSelectorMappings");
+}
+
+function validateFigmaCardData(data, label) {
+  if (!data) return;
+  requireJson(data.version === 1, `${label} version is 1`, "version");
+  requireJson(data.template?.fileKey === "MGMCrXQxxIvOkCAAw3bxCq", `${label} uses canonical file key`, "template.fileKey");
+  requireJson(data.template?.nodeId === "77:501", `${label} uses canonical node id`, "template.nodeId");
+  requireJson(data.template?.width === 840, `${label} uses canonical width`, "template.width");
+  requireJson(data.template?.titleHeight === 120, `${label} uses canonical title height`, "template.titleHeight");
+  requireJson(Array.isArray(data.cards) && data.cards.length > 0, `${label} has cards`, "cards");
+  for (const [index, card] of (data.cards || []).entries()) {
+    requireJson(Boolean(card.situation), `${label} card ${index + 1} has situation`, `cards[${index}].situation`);
+    requireJson(Boolean(card.screenName), `${label} card ${index + 1} has screen name`, `cards[${index}].screenName`);
+    requireJson(Array.isArray(card.blocks) && card.blocks.length > 0, `${label} card ${index + 1} has blocks`, `cards[${index}].blocks`);
+  }
+}
+
+function requireJson(condition, check, target) {
+  results.push({ check, result: condition ? "Pass" : "Fail", target });
 }

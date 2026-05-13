@@ -15,6 +15,10 @@ mkdirSync(outDir, { recursive: true });
 
 const markdown = readFileSync(specPath, "utf8");
 const cardData = buildCardData(markdown, feature);
+const schemaErrors = validateFigmaCardData(cardData);
+if (schemaErrors.length > 0) {
+  throw new Error(`Invalid figma card data:\n${schemaErrors.join("\n")}`);
+}
 writeFileSync(dataPath, `${JSON.stringify(cardData, null, 2)}\n`, "utf8");
 writeFileSync(scriptPath, renderFigmaScript(cardData), "utf8");
 
@@ -98,13 +102,13 @@ function screenToCard(section, index, featureName) {
     blocks.push({
       number: String(rowIndex + 1),
       kind: "item",
-      title: `[${inferItemType(row["UI Item"], row.Behavior, row.State)}] ${row["UI Item"] || row["Screen Area"] || `항목 ${rowIndex + 1}`}`,
+      title: `[${inferItemType(row["UI Item"], row.Behavior, row.State)}] ${row["UI Item"] || row["Screen Area"] || `\uD56D\uBAA9 ${rowIndex + 1}`}`,
       bullets: compact([
-        row["Screen Area"] && `영역 : ${row["Screen Area"]}`,
+        row["Screen Area"] && `\uC601\uC5ED : ${row["Screen Area"]}`,
         row.Behavior,
-        row.Exception && `예외 : ${row.Exception}`,
-        row.State && `상태 : ${row.State}`,
-        row["Data Impact"] && `데이터 영향 : ${row["Data Impact"]}`
+        row.Exception && `\uC608\uC678 : ${row.Exception}`,
+        row.State && `\uC0C1\uD0DC : ${row.State}`,
+        row["Data Impact"] && `\uB370\uC774\uD130 \uC601\uD5A5 : ${row["Data Impact"]}`
       ])
     });
   });
@@ -120,7 +124,7 @@ function screenToCard(section, index, featureName) {
       number: "P",
       kind: "policy",
       title: featureName,
-      bullets: ["화면별 UI 항목과 동작을 기준 기능명세 카드 형식으로 정리합니다."]
+      bullets: ["\uD654\uBA74\uBCC4 UI \uD56D\uBAA9\uACFC \uB3D9\uC791\uC744 \uAE30\uC900 \uAE30\uB2A5\uBA85\uC138 \uCE74\uB4DC \uD615\uC2DD\uC73C\uB85C \uC815\uB9AC\uD569\uB2C8\uB2E4."]
     }]
   };
 }
@@ -192,7 +196,7 @@ function cleanCell(value) {
 
 function sentenceBullets(value) {
   return compact(String(value || "")
-    .split(/(?<=[.!?。！？다])\s+/)
+    .split(/(?<=[.!?])\s+|(?<=\uB2E4\.)\s+/)
     .map((item) => item.trim())
     .filter((item) => item.length > 8));
 }
@@ -203,12 +207,43 @@ function compact(values) {
 
 function inferItemType(item = "", behavior = "", state = "") {
   const text = `${item} ${behavior} ${state}`.toLowerCase();
-  if (/input|textarea|입력|검색/.test(text)) return "Input";
-  if (/option|radio|checkbox|선택|옵션|체크/.test(text)) return "Option";
-  if (/button|click|버튼|닫기|등록|저장/.test(text)) return "Button";
-  if (/empty|disabled|loading|error|상태|비활성|오류/.test(text)) return "State";
-  if (/calendar|date|날짜|일자/.test(text)) return "Date";
+  if (/input|textarea|\uC785\uB825|\uAC80\uC0C9/.test(text)) return "Input";
+  if (/option|radio|checkbox|\uC120\uD0DD|\uC635\uC158|\uCCB4\uD06C/.test(text)) return "Option";
+  if (/button|click|\uBC84\uD2BC|\uB2EB\uAE30|\uB4F1\uB85D|\uC800\uC7A5/.test(text)) return "Button";
+  if (/empty|disabled|loading|error|\uC0C1\uD0DC|\uBE44\uD65C\uC131|\uC624\uB958/.test(text)) return "State";
+  if (/calendar|date|\uB0A0\uC9DC|\uC77C\uC790/.test(text)) return "Date";
   return "Item";
+}
+
+function validateFigmaCardData(data) {
+  const errors = [];
+  const requiredRoot = ["version", "template", "feature", "project", "generatedFrom", "cards"];
+  requiredRoot.forEach((key) => {
+    if (!(key in data)) errors.push(`root missing ${key}`);
+  });
+  if (data.version !== 1) errors.push("version must be 1");
+  if (data.template?.fileKey !== "MGMCrXQxxIvOkCAAw3bxCq") errors.push("template.fileKey must match canonical file");
+  if (data.template?.nodeId !== "77:501") errors.push("template.nodeId must be 77:501");
+  if (data.template?.width !== 840) errors.push("template.width must be 840");
+  if (data.template?.titleHeight !== 120) errors.push("template.titleHeight must be 120");
+  if (!Array.isArray(data.cards) || data.cards.length === 0) errors.push("cards must be a non-empty array");
+  (data.cards || []).forEach((card, cardIndex) => {
+    ["id", "frameName", "situation", "screenName", "screenPath", "caseName", "blocks"].forEach((key) => {
+      if (!(key in card)) errors.push(`cards[${cardIndex}] missing ${key}`);
+    });
+    if (!Array.isArray(card.blocks) || card.blocks.length === 0) {
+      errors.push(`cards[${cardIndex}].blocks must be non-empty`);
+      return;
+    }
+    card.blocks.forEach((block, blockIndex) => {
+      ["number", "kind", "title", "bullets"].forEach((key) => {
+        if (!(key in block)) errors.push(`cards[${cardIndex}].blocks[${blockIndex}] missing ${key}`);
+      });
+      if (!["policy", "item"].includes(block.kind)) errors.push(`cards[${cardIndex}].blocks[${blockIndex}].kind invalid`);
+      if (!Array.isArray(block.bullets)) errors.push(`cards[${cardIndex}].blocks[${blockIndex}].bullets must be array`);
+    });
+  });
+  return errors;
 }
 
 function renderFigmaScript(data) {
@@ -301,7 +336,7 @@ function createTitle(card) {
   title.counterAxisSizingMode = "FIXED";
   title.itemSpacing = 0;
 
-  const situation = rowFrame("상황", WIDTH, 40, ACCENT, true);
+  const situation = rowFrame("\uC0C1\uD669", WIDTH, 40, ACCENT, true);
   situation.appendChild(textNode(card.situation, 20, "Bold", WHITE, 12, 8, 800, 24));
   title.appendChild(situation);
 
@@ -314,8 +349,8 @@ function createTitle(card) {
   screenRow.counterAxisSizingMode = "FIXED";
   screenRow.itemSpacing = 0;
   title.appendChild(screenRow);
-  screenRow.appendChild(labeledCell("화면명", card.screenName, 360, 40));
-  screenRow.appendChild(labeledCell("경로", card.screenPath, 480, 40));
+  screenRow.appendChild(labeledCell("\uD654\uBA74\uBA85", card.screenName, 360, 40));
+  screenRow.appendChild(labeledCell("\uACBD\uB85C", card.screenPath, 480, 40));
 
   const caseRow = labeledCell("Case", card.caseName, WIDTH, 40);
   caseRow.name = "Case";
@@ -325,7 +360,7 @@ function createTitle(card) {
 
 function createDescription(block) {
   const row = figma.createFrame();
-  row.name = "설명";
+  row.name = "\uC124\uBA85";
   row.resize(WIDTH, 10);
   row.fills = [{ type: "SOLID", color: WHITE }];
   row.strokes = [{ type: "SOLID", color: BLACK }];
@@ -351,7 +386,7 @@ function createDescription(block) {
   row.appendChild(number);
 
   const content = figma.createFrame();
-  content.name = "설명(1)";
+  content.name = "\uC124\uBA85(1)";
   content.resize(740, 10);
   content.fills = [];
   content.layoutMode = "VERTICAL";
@@ -362,7 +397,7 @@ function createDescription(block) {
 
   content.appendChild(textNode(block.title, 16, "Bold", color, 0, 0, 720, 22));
   for (const bullet of block.bullets || []) {
-    content.appendChild(textNode("• " + bullet, 16, "Regular", BLACK, 8, 0, 700, 24));
+    content.appendChild(textNode("\u2022 " + bullet, 16, "Regular", BLACK, 8, 0, 700, 24));
   }
   return row;
 }

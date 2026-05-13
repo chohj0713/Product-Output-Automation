@@ -1,36 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Feature Spec Coverage Matrix",
+  "title": "Feature Spec Coverage Summary",
   "type": "object",
-  "required": ["feature", "items"],
+  "required": ["feature", "statusSummary", "logicTypeSummary"],
   "properties": {
     "feature": { "type": "string" },
-    "items": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "logicType", "source", "category", "summary", "status"],
-        "properties": {
-          "id": { "type": "string" },
-          "logicType": {
-            "type": "string",
-            "enum": ["Business", "UI", "Integration", "Unknown"]
-          },
-          "source": { "type": "string" },
-          "category": {
-            "type": "string",
-            "enum": ["UI", "State", "Validation", "Pricing", "Ticket Usage", "Persistence", "Repair/Migration", "Edge Case", "Unknown"]
-          },
-          "summary": { "type": "string" },
-          "status": {
-            "type": "string",
-            "enum": ["Covered", "Partial", "Not Covered", "Open Question"]
-          },
-          "specArea": { "type": "string" },
-          "specRow": { "type": "string" },
-          "notes": { "type": "string" }
-        }
-      }
+    "statusSummary": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "logicTypeSummary": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
     }
   }
 }

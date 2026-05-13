@@ -8,6 +8,10 @@ tmp/
 outputs/**/captures/_figma_embed/
 outputs/**/captures/_figma_embed_small/
 
+# Optional raw analysis details
+outputs/**/logic-inventory.detail.md
+outputs/**/coverage-matrix.detail.md
+
 # OS/editor noise
 .DS_Store
 Thumbs.db

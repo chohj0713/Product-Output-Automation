@@ -4,26 +4,34 @@
 
 Create a PM collaboration feature spec from code and product input. The Figma final output must use this structure: platform header -> feature sections -> numbered item frame -> `Container`.
 
+The pipeline is contract-first: code evidence is pre-processed into structured JSON, validated against JSON Schema, then transformed into PM-readable Markdown and canonical Figma card data.
+
 ## Output Order
 
-1. `internal/candidate-files.md`
-2. `internal/logic-inventory.md`
-3. `internal/coverage-matrix.md`
-4. `internal/domain-rule-map.md`
-5. `internal/open-questions.md`
-6. `human/00-feature-summary.md`
-7. `human/platform-map.md`
-8. `human/screen-case-map.md`
-9. `human/policy-table.md`
-10. `human/state-matrix.md`
-11. `human/ui-element-spec.md`
-12. `human/decision-log.md`
-13. `human/event-tracking.md`
-14. Ask the user how to handle open questions.
-15. `human/<feature>-feature-spec.md`
-16. `human/readability-validation.md`
-17. `human/figma-card-data.json`
-18. `human/figma-create-canonical-cards.js`
+1. `internal/preprocessed-code-summary.json`
+2. Validate `internal/preprocessed-code-summary.json` with `schemas/preprocessed-code-summary.schema.json`.
+3. `internal/preprocessed-code-summary.md`
+4. `internal/candidate-files.md`
+5. `internal/logic-inventory.json`
+6. Validate `internal/logic-inventory.json` with `schemas/logic-inventory.schema.json`.
+7. `internal/logic-inventory.md`
+8. `internal/coverage-matrix.md`
+9. `internal/domain-rule-map.md`
+10. `internal/open-questions.md`
+11. `human/00-feature-summary.md`
+12. `human/platform-map.md`
+13. `human/screen-case-map.md`
+14. `human/policy-table.md`
+15. `human/state-matrix.md`
+16. `human/ui-element-spec.md`
+17. `human/decision-log.md`
+18. `human/event-tracking.md`
+19. Ask the user how to handle open questions.
+20. `human/<feature>-feature-spec.md`
+21. `human/readability-validation.md`
+22. `human/figma-card-data.json`
+23. Validate `human/figma-card-data.json` with `schemas/figma-card-data.schema.json`.
+24. `human/figma-create-canonical-cards.js`
 
 Legacy flat files may exist at `outputs/<feature>/` for compatibility.
 
@@ -31,7 +39,7 @@ Legacy flat files may exist at `outputs/<feature>/` for compatibility.
 
 - Create only the written spec side as `Container`.
 - Treat the reference node `MGMCrXQxxIvOkCAAw3bxCq / 77:501` as the canonical card template.
-- Convert the screen-first Markdown spec into card-first data before creating Figma nodes.
+- Convert the screen-first Markdown spec into schema-validated card-first data before creating Figma nodes.
 - Follow this hierarchy:
   - Platform header frame, for example `픽드랍 / 비즈 Web`.
   - `SECTION` per feature screen or user-facing case.
@@ -39,7 +47,7 @@ Legacy flat files may exist at `outputs/<feature>/` for compatibility.
   - Inside each numbered frame, create one child frame named exactly `Container`.
   - Inside `Container`, create `Title` and numbered `설명` blocks.
 - Container content follows this pattern:
-  - `Title`: 상황/도메인 title, 화면명, 화면 경로, Case.
+  - `Title`: 상황, 화면명, 화면 경로, Case.
   - `설명`: numbered behavior blocks with concise product-facing text.
   - Use screen area and UI item language inside descriptions.
 
@@ -59,8 +67,36 @@ The command writes:
 - `human/figma-card-data.json`: normalized `situation`, `screenName`, `screenPath`, `caseName`, and `blocks`.
 - `human/figma-create-canonical-cards.js`: Figma Plugin API script that creates the canonical `840px` `Container` cards.
 
+## JSON Contracts
+
+- `internal/preprocessed-code-summary.json` must contain only DOM nodes, selector mappings, and event listener summaries needed for planning.
+- `internal/logic-inventory.json` must include `domSelectorMappings`; `internal/logic-inventory.md` must include a `DOM Selector Mapping Table`.
+- `human/figma-card-data.json` must separate every template field: `situation`, `screenName`, `screenPath`, `caseName`, and `blocks[]`.
+- A Figma card block must use separated fields: `number`, `kind`, `title`, `bullets[]`.
+- Do not inject composed Markdown, tables, or multiline policy prose directly into a Figma card field.
+- The Figma template constants are fixed: file key `MGMCrXQxxIvOkCAAw3bxCq`, node `77:501`, width `840`, title height `120`.
+
+## Self-correction Loop
+
+If validation fails or JSON parsing fails:
+
+1. Identify the failing contract and the affected screen or screen area.
+2. Return only to the previous step for that screen area.
+3. Regenerate only the failing JSON object or Figma card block.
+4. Re-run the relevant schema validation.
+5. Continue the pipeline only after validation passes.
+
+If Figma script generation fails:
+
+1. Keep the canonical template unchanged.
+2. Inspect `human/figma-card-data.json` for missing or merged fields.
+3. Regenerate only the affected card in `cards[]`.
+4. Validate `figma-card-data.json`.
+5. Re-run `build-figma-card-output.mjs`.
+
 ## Rules
 
+- Run code pre-processing before candidate selection so context is based on DOM structure, selectors, and event bindings rather than raw source volume.
 - Use platform, screen, screen area, and UI item mapping before writing the final spec.
 - Keep internal audit files out of the final spec.
 - Ask the user how to handle open questions before final spec writing.
@@ -88,6 +124,14 @@ When open questions exist, ask the user to choose one:
 ## Commands
 
 ```powershell
+node .\harness\feature-spec\scripts\preprocess-code.mjs `
+  --feature "<feature>" `
+  --prototype "<prototype path>" `
+  --output ".\outputs\<feature>" `
+  --keywords "<keyword1>,<keyword2>"
+```
+
+```powershell
 node .\harness\feature-spec\scripts\analyze-feature.mjs `
   --project "<project name with target/platform, e.g. Schedule Daycare Biz Web>" `
   --feature "<feature>" `
@@ -97,7 +141,25 @@ node .\harness\feature-spec\scripts\analyze-feature.mjs `
 ```
 
 ```powershell
+node .\harness\feature-spec\scripts\validate-json.mjs `
+  --schema ".\harness\feature-spec\schemas\preprocessed-code-summary.schema.json" `
+  --data ".\outputs\<feature>\internal\preprocessed-code-summary.json"
+```
+
+```powershell
+node .\harness\feature-spec\scripts\validate-json.mjs `
+  --schema ".\harness\feature-spec\schemas\logic-inventory.schema.json" `
+  --data ".\outputs\<feature>\internal\logic-inventory.json"
+```
+
+```powershell
 node .\harness\feature-spec\scripts\validate-markdown.mjs `
   --output ".\outputs\<feature>" `
   --spec ".\outputs\<feature>\human\<feature>-feature-spec.md"
+```
+
+```powershell
+node .\harness\feature-spec\scripts\validate-json.mjs `
+  --schema ".\harness\feature-spec\schemas\figma-card-data.schema.json" `
+  --data ".\outputs\<feature>\human\figma-card-data.json"
 ```

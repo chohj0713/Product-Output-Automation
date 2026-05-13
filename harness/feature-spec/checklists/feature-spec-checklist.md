@@ -1,6 +1,11 @@
 # Feature Spec Checklist
 
 - [ ] Screen plan exists.
+- [ ] `internal/preprocessed-code-summary.json` exists and passes JSON Schema validation.
+- [ ] `internal/preprocessed-code-summary.md` summarizes DOM nodes, selector mappings, and event bindings before candidate selection.
+- [ ] `internal/candidate-files.md` includes the pre-processing summary handoff.
+- [ ] `internal/logic-inventory.json` exists and passes JSON Schema validation.
+- [ ] `internal/logic-inventory.md` includes a `DOM Selector Mapping Table`.
 - [ ] Final spec is organized around actual screens.
 - [ ] Each screen includes `Screen Header`, `Context`, `Screen Areas`, `UI Item Spec`, `Screen-level States`, and `Policy Notes`.
 - [ ] Screen areas are based on visible regions inside the screen.
@@ -12,7 +17,9 @@
 - [ ] Figma final output, when requested, uses Container-only structure.
 - [ ] Figma final output uses canonical node `MGMCrXQxxIvOkCAAw3bxCq / 77:501` as the layout reference.
 - [ ] Figma output has `figma-card-data.json` before node creation.
+- [ ] `figma-card-data.json` passes JSON Schema validation before script generation.
 - [ ] Figma cards preserve `Title`, repeated `설명` blocks, `Number`, bullets, and policy/item color differences.
 - [ ] Figma cards do not collapse content into a single `설명 제목` + `설명 본문` block.
+- [ ] Validation or JSON failures are corrected by regenerating only the affected screen area/card, then re-validating.
 - [ ] Summary inventory, coverage, and open questions exist.
 - [ ] Markdown validation passes.
